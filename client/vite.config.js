@@ -12,6 +12,8 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    // Allow public dev tunnels (localtunnel/cloudflare) to reach the dev server.
+    allowedHosts: ['.loca.lt', '.trycloudflare.com', '.ngrok-free.app'],
     proxy: {
       '/api': {
         target: 'http://localhost:3001',

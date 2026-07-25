@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: stackd
+    runtime: node
+    plan: starter          # persistent server (needed for 2-min scans); free plan sleeps
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Secrets — set these in the Render dashboard, do NOT commit real values:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SERPAPI_KEY
+        sync: false
+      - key: EBAY_CLIENT_ID
+        sync: false
+      - key: EBAY_CLIENT_SECRET
+        sync: false
+      - key: RAPIDAPI_KEY
+        sync: false
+      - key: SNEAKER_API_HOST
+        value: sneaker-database-stockx.p.rapidapi.com
+      - key: PRICECHARTING_HOST
+        value: pricecharting-api.p.rapidapi.com
+      - key: PRICECHARTING_ENABLED
+        value: "false"
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false

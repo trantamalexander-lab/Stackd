@@ -25,13 +25,13 @@
   "sneaker|BB550WT1|10": {
     "data": {
       "source": "StockX · size 10",
-      "sellPrice": 162,
-      "stockX": 49,
-      "goat": 78,
-      "perSize": 162,
+      "sellPrice": 165,
+      "stockX": 50,
+      "goat": 30,
+      "perSize": 165,
       "size": "10",
-      "lastSale": 83,
-      "lowestAsk": 49,
+      "lastSale": 49,
+      "lowestAsk": 50,
       "retailPrice": 120,
       "shoeName": "New Balance 550 White Green",
       "colorway": "White/Green",
@@ -39,33 +39,31 @@
       "links": {
         "stockX": "https://stockx.com/new-balance-550-white-green",
         "goat": "http://www.goat.com/sneakers/550-white-green-bb550wt1",
-        "flightClub": "https://www.flightclub.com/550-white-green-bb550wt1",
-        "stadiumGoods": "https://www.stadiumgoods.com/products/550-white-green-061423"
+        "flightClub": "https://www.flightclub.com/550-white-green-bb550wt1"
       }
     },
-    "ts": 1781489022535
+    "ts": 1784767648698
   },
   "sneaker|B75806|10": {
     "data": {
       "source": "StockX · size 10",
-      "sellPrice": 60,
-      "stockX": 50,
+      "sellPrice": 77,
+      "stockX": 52,
       "goat": null,
-      "perSize": 60,
+      "perSize": 77,
       "size": "10",
-      "lastSale": 50,
-      "lowestAsk": 50,
+      "lastSale": 63,
+      "lowestAsk": 52,
       "retailPrice": 100,
       "shoeName": "adidas Samba OG Cloud White Core Black",
       "colorway": "Cloud White/Core Black/Clear Granite",
       "styleId": "B75806",
       "links": {
         "stockX": "https://stockx.com/adidas-samba-og-cloud-white-core-black",
-        "goat": "http://www.goat.com/sneakers/samba-og-bz0057",
-        "stadiumGoods": "https://www.stadiumgoods.com/products/samba-og-white-black-052111"
+        "goat": "http://www.goat.com/sneakers/samba-og-bz0057"
       }
     },
-    "ts": 1781489040947
+    "ts": 1784767652564
   },
   "sneaker|908375-103|10": {
     "data": {
@@ -116,24 +114,23 @@
   "sneaker|CW2288-111|10": {
     "data": {
       "source": "StockX · size 10",
-      "sellPrice": 78,
-      "stockX": 69,
+      "sellPrice": 81,
+      "stockX": 70,
       "goat": 70,
-      "perSize": 78,
+      "perSize": 81,
       "size": "10",
-      "lastSale": 78,
-      "lowestAsk": 69,
+      "lastSale": 96,
+      "lowestAsk": 70,
       "retailPrice": 115,
       "shoeName": "Nike Air Force 1 Low '07 White",
       "colorway": "White/White",
       "styleId": "CW2288-111",
       "links": {
         "stockX": "https://stockx.com/nike-air-force-1-low-white-07",
-        "goat": "http://www.goat.com/sneakers/nike-air-force-1-315122-111",
-        "stadiumGoods": null
+        "goat": "http://www.goat.com/sneakers/nike-air-force-1-315122-111"
       }
     },
-    "ts": 1781445102050
+    "ts": 1784767645594
   },
   "sneaker|DD1391-100|10": {
     "data": {
@@ -183,57 +180,57 @@
   "sneaker|555088-134|any": {
     "data": {
       "source": "StockX (lowest ask)",
-      "sellPrice": 176,
-      "stockX": 176,
-      "goat": 160,
+      "sellPrice": 156,
+      "stockX": 156,
+      "goat": 135,
       "perSize": null,
       "size": null,
-      "lastSale": 232,
-      "lowestAsk": 176,
+      "lastSale": 220,
+      "lowestAsk": 156,
       "retailPrice": 170,
       "shoeName": "Jordan 1 Retro High OG University Blue",
       "colorway": "White/University Blue-Black",
       "styleId": "555088-134",
       "links": {
         "stockX": "https://stockx.com/air-jordan-1-retro-high-white-university-blue-black",
-        "goat": "http://www.goat.com/sneakers/air-jordan-1-retro-high-og-university-blue-555088-134",
-        "flightClub": "https://www.flightclub.com/air-jordan-1-retro-high-og-university-blue-555088-134"
+        "flightClub": "https://www.flightclub.com/air-jordan-1-retro-high-og-university-blue-555088-134",
+        "goat": "http://www.goat.com/sneakers/air-jordan-1-retro-high-og-university-blue-555088-134"
       }
     },
-    "ts": 1782138094656
+    "ts": 1783895175649
   },
   "sneaker|BB550WT1|any": {
     "data": {
       "source": "StockX (lowest ask)",
-      "sellPrice": 56,
-      "stockX": 56,
-      "goat": 30,
+      "sellPrice": 50,
+      "stockX": 50,
+      "goat": 28,
       "perSize": null,
       "size": null,
-      "lastSale": 68,
-      "lowestAsk": 56,
+      "lastSale": 55,
+      "lowestAsk": 50,
       "retailPrice": 120,
       "shoeName": "New Balance 550 White Green",
       "colorway": "White/Green",
       "styleId": "BB550WT1",
       "links": {
         "stockX": "https://stockx.com/new-balance-550-white-green",
-        "flightClub": "https://www.flightclub.com/550-white-green-bb550wt1",
-        "goat": "http://www.goat.com/sneakers/550-white-green-bb550wt1"
+        "goat": "http://www.goat.com/sneakers/550-white-green-bb550wt1",
+        "flightClub": "https://www.flightclub.com/550-white-green-bb550wt1"
       }
     },
-    "ts": 1782504985340
+    "ts": 1785013791931
   },
   "sneaker|DD1391-100|any": {
     "data": {
       "source": "StockX (lowest ask)",
-      "sellPrice": 54,
-      "stockX": 54,
-      "goat": 65,
+      "sellPrice": 55,
+      "stockX": 55,
+      "goat": 44,
       "perSize": null,
       "size": null,
-      "lastSale": 64,
-      "lowestAsk": 54,
+      "lastSale": 71,
+      "lowestAsk": 55,
       "retailPrice": 115,
       "shoeName": "Nike Dunk Low Retro White Black Panda",
       "colorway": "White/Black",
@@ -244,18 +241,18 @@
         "flightClub": "https://www.flightclub.com/dunk-low-black-white-dd1391-100"
       }
     },
-    "ts": 1782504972234
+    "ts": 1785013786351
   },
   "sneaker|CT1685-100|any": {
     "data": {
       "source": "StockX (lowest ask)",
-      "sellPrice": 158,
-      "stockX": 158,
-      "goat": 130,
+      "sellPrice": 150,
+      "stockX": 150,
+      "goat": 133,
       "perSize": null,
       "size": null,
-      "lastSale": 180,
-      "lowestAsk": 158,
+      "lastSale": 170,
+      "lowestAsk": 150,
       "retailPrice": 140,
       "shoeName": "Nike Air Max 90 Infrared (2020)",
       "colorway": "White/Black-Cool Grey-Radiant Red",
@@ -263,11 +260,10 @@
       "links": {
         "stockX": "https://stockx.com/nike-air-max-90-infrared-2020",
         "goat": "http://www.goat.com/sneakers/air-max-90-infrared-2020-ct1685-100",
-        "flightClub": "https://www.flightclub.com/air-max-90-infrared-2020-ct1685-100",
-        "stadiumGoods": null
+        "flightClub": "https://www.flightclub.com/air-max-90-infrared-2020-ct1685-100"
       }
     },
-    "ts": 1782505021598
+    "ts": 1785013827650
   },
   "sneaker|554724-069|any": {
     "data": {
@@ -291,5 +287,223 @@
       }
     },
     "ts": 1782505151974
+  },
+  "sneaker|CW2288-111|any": {
+    "data": {
+      "source": "StockX (lowest ask)",
+      "sellPrice": 69,
+      "stockX": 69,
+      "goat": 70,
+      "perSize": null,
+      "size": null,
+      "lastSale": 80,
+      "lowestAsk": 69,
+      "retailPrice": 115,
+      "shoeName": "Nike Air Force 1 Low '07 White",
+      "colorway": "White/White",
+      "styleId": "CW2288-111",
+      "links": {
+        "stockX": "https://stockx.com/nike-air-force-1-low-white-07",
+        "goat": "http://www.goat.com/sneakers/nike-air-force-1-315122-111"
+      }
+    },
+    "ts": 1785013824154
+  },
+  "sneaker|BQ6817-010|any": {
+    "data": {
+      "source": "StockX (lowest ask)",
+      "sellPrice": 150,
+      "stockX": 150,
+      "goat": 140,
+      "perSize": null,
+      "size": null,
+      "lastSale": 188,
+      "lowestAsk": 150,
+      "retailPrice": 100,
+      "shoeName": "Nike SB Dunk Low Fog",
+      "colorway": "Black/Gum/Light Grey",
+      "styleId": "BQ6817-010",
+      "links": {
+        "stockX": "https://stockx.com/nike-dunk-sb-low-fog",
+        "flightClub": "https://www.flightclub.com/dunk-low-pro-sb-fog-bq6817-010",
+        "goat": "http://www.goat.com/sneakers/dunk-low-pro-sb-fog-bq6817-010",
+        "stadiumGoods": null
+      }
+    },
+    "ts": 1783895147999
+  },
+  "sneaker|553558-066|any": {
+    "data": {
+      "source": "StockX (lowest ask)",
+      "sellPrice": 55,
+      "stockX": 55,
+      "goat": 34,
+      "perSize": null,
+      "size": null,
+      "lastSale": 85,
+      "lowestAsk": 55,
+      "retailPrice": 110,
+      "shoeName": "Jordan 1 Low Alternate Bred Toe",
+      "colorway": "Black/White/Gym Red",
+      "styleId": "553558-066",
+      "links": {
+        "stockX": "https://stockx.com/air-jordan-1-low-alternate-bred-toe",
+        "goat": "http://www.goat.com/sneakers/air-jordan-1-low-alternate-bred-toe-553558-066",
+        "flightClub": "https://www.flightclub.com/air-jordan-1-low-alternate-bred-toe-553558-066"
+      }
+    },
+    "ts": 1783896364694
+  },
+  "sneaker|B75806|any": {
+    "data": {
+      "source": "StockX (lowest ask)",
+      "sellPrice": 52,
+      "stockX": 52,
+      "goat": null,
+      "perSize": null,
+      "size": null,
+      "lastSale": 76,
+      "lowestAsk": 52,
+      "retailPrice": 100,
+      "shoeName": "adidas Samba OG Cloud White Core Black",
+      "colorway": "Cloud White/Core Black/Clear Granite",
+      "styleId": "B75806",
+      "links": {
+        "stockX": "https://stockx.com/adidas-samba-og-cloud-white-core-black",
+        "goat": "http://www.goat.com/sneakers/samba-og-bz0057"
+      }
+    },
+    "ts": 1785013810981
+  },
+  "sneaker|GW1931|any": {
+    "data": {
+      "source": "StockX (lowest ask)",
+      "sellPrice": 56,
+      "stockX": 56,
+      "goat": 55,
+      "perSize": null,
+      "size": null,
+      "lastSale": 132,
+      "lowestAsk": 56,
+      "retailPrice": 60,
+      "shoeName": "adidas Yeezy Slide Ochre",
+      "colorway": "Ochre/Ochre/Ochre",
+      "styleId": "GW1931",
+      "links": {
+        "stockX": "https://stockx.com/adidas-yeezy-slide-ochre",
+        "goat": "http://www.goat.com/sneakers/yeezy-slides-ochre-gw1931",
+        "flightClub": "https://www.flightclub.com/yeezy-slides-ochre-gw1931"
+      }
+    },
+    "ts": 1784767575947
+  },
+  "sneaker|M990GL3|any": {
+    "data": {
+      "source": "StockX (lowest ask)",
+      "sellPrice": 158,
+      "stockX": 158,
+      "goat": 64,
+      "perSize": null,
+      "size": null,
+      "lastSale": 140,
+      "lowestAsk": 158,
+      "retailPrice": 165,
+      "shoeName": "New Balance 990v3 MiUSA Grey",
+      "colorway": "Grey/White",
+      "styleId": "M990GL3",
+      "links": {
+        "stockX": "https://stockx.com/new-balance-990v3-grey-2019",
+        "goat": "http://www.goat.com/sneakers/m990-m990gl3"
+      }
+    },
+    "ts": 1784767795927
+  },
+  "sneaker|CJ5378-800|any": {
+    "data": {
+      "source": "StockX (lowest ask)",
+      "sellPrice": 2949,
+      "stockX": 2949,
+      "goat": 1875,
+      "perSize": null,
+      "size": null,
+      "lastSale": 2500,
+      "lowestAsk": 2949,
+      "retailPrice": 110,
+      "shoeName": "Nike SB Dunk Low Grateful Dead Bears Orange",
+      "colorway": "Bright Ceramic/Green Spark",
+      "styleId": "CJ5378-800",
+      "links": {
+        "stockX": "https://stockx.com/nike-sb-dunk-low-grateful-dead-bears-orange",
+        "flightClub": "https://www.flightclub.com/grateful-dead-x-dunk-low-sb-orange-bear-cj5378-800",
+        "goat": "http://www.goat.com/sneakers/grateful-dead-x-dunk-low-sb-orange-bear-cj5378-800"
+      }
+    },
+    "ts": 1784768030116
+  },
+  "sneaker|555088-610|any": {
+    "data": {
+      "source": "StockX (lowest ask)",
+      "sellPrice": 195,
+      "stockX": 195,
+      "goat": 236,
+      "perSize": null,
+      "size": null,
+      "lastSale": 229,
+      "lowestAsk": 195,
+      "retailPrice": 160,
+      "shoeName": "Jordan 1 Retro High Bred Toe",
+      "colorway": "Gym Red/Black-Summit White",
+      "styleId": "555088-610",
+      "links": {
+        "stockX": "https://stockx.com/air-jordan-1-retro-high-bred-toe",
+        "flightClub": "https://www.flightclub.com/air-jordan-1-retro-high-og-gym-red-black-summit-white-802799",
+        "goat": "http://www.goat.com/sneakers/air-jordan-1-retro-high-og-555088-610"
+      }
+    },
+    "ts": 1785013807446
+  },
+  "sneaker|M2002RDJ|any": {
+    "data": {
+      "source": "StockX (lowest ask)",
+      "sellPrice": 83,
+      "stockX": 83,
+      "goat": 90,
+      "perSize": null,
+      "size": null,
+      "lastSale": 299,
+      "lowestAsk": 83,
+      "retailPrice": 170,
+      "shoeName": "New Balance 2002R Protection Pack Black Grey",
+      "colorway": "Black/Grey",
+      "styleId": "M2002RDJ",
+      "links": {
+        "stockX": "https://stockx.com/new-balance-2002r-protection-pack-black-grey",
+        "goat": "http://www.goat.com/sneakers/2002r-protection-pack-black-grey-m2002rdj",
+        "flightClub": "https://www.flightclub.com/2002r-protection-pack-black-grey-m2002rdj"
+      }
+    },
+    "ts": 1785013830527
+  },
+  "sneaker|FV5029-006|any": {
+    "data": {
+      "source": "StockX (lowest ask)",
+      "sellPrice": 191,
+      "stockX": 191,
+      "goat": 171,
+      "perSize": null,
+      "size": null,
+      "lastSale": 240,
+      "lowestAsk": 191,
+      "retailPrice": 215,
+      "shoeName": "Jordan 4 Retro Bred Reimagined",
+      "colorway": "Black/Cement Grey/Varsity Red/Summit White",
+      "styleId": "FV5029-006",
+      "links": {
+        "stockX": "https://stockx.com/air-jordan-4-retro-bred-reimagined",
+        "goat": "http://www.goat.com/sneakers/air-jordan-4-retro-bred-reimagined-fv5029-006",
+        "flightClub": "https://www.flightclub.com/air-jordan-4-retro-bred-reimagined-fv5029-006"
+      }
+    },
+    "ts": 1785013845407
   }
 }

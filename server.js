@@ -2,12 +2,18 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { findFlips, lastQuota } from './flipFinder.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;   // hosts (Render, etc.) inject PORT
 
-app.use(cors({ origin: 'http://localhost:3000' }));
+// In production the frontend is served same-origin, so CORS isn't needed; in dev
+// the Vite server on :3000 calls the API cross-origin.
+app.use(cors({ origin: process.env.NODE_ENV === 'production' ? true : 'http://localhost:3000' }));
+app.set('trust proxy', 1);   // correct client IPs behind the host's proxy (rate limits)
 app.use(express.json({ limit: '10kb' })); // reject oversized payloads
 
 // ── Rate limiters ──────────────────────────────────────────────
@@ -139,6 +145,13 @@ app.get('/api/product-image/:item', async (req, res) => {
 });
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+
+// ── Serve the built React frontend (production) ────────────────
+// Everything that isn't an /api route falls through to the SPA so the domain
+// serves the app itself, same-origin (no CORS, relative /api calls just work).
+const clientDist = path.join(__dirname, 'client', 'dist');
+app.use(express.static(clientDist));
+app.get(/^(?!\/api).*/, (_req, res) => res.sendFile(path.join(clientDist, 'index.html')));
 
 const server = app.listen(PORT, () =>
   console.log(`Stackd API running on http://localhost:${PORT}`)

@@ -99,6 +99,13 @@ function FlipCard({ flip, onSave, saved, index }) {
           {flip.timeToSell && <span style={{ fontFamily: F.display, fontSize: 11, fontWeight: 500, padding: '4px 12px', borderRadius: 6, background: 'rgba(255,255,255,0.05)', color: C.text2 }}>{flip.timeToSell}</span>}
           {flip.difficulty && <span style={{ fontFamily: F.display, fontSize: 11, fontWeight: 500, padding: '4px 12px', borderRadius: 6, background: diff.bg, color: diff.color, textTransform: 'uppercase' }}>{flip.difficulty}</span>}
           {flip.verified && <span style={{ fontFamily: F.display, fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 6, background: C.accentBg, color: C.accent }}>✓ {flip.marketData ? `Verified · ${flip.priceSource || 'StockX'}` : `${flip.compStats?.count || ''} sold comps`}</span>}
+          {!flip.verified && <span style={{ fontFamily: F.display, fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 6, background: 'rgba(255,107,107,0.08)', color: C.danger }}>⚠ Estimate — unverified</span>}
+          {flip.liquidity && (() => {
+            const L = flip.liquidity
+            const map = { liquid: { t: '💧 Sells fast', c: C.accent, bg: C.accentBg }, moderate: { t: '💧 Moderate demand', c: C.text2, bg: 'rgba(255,255,255,0.05)' }, slow: { t: '🐌 Slow mover', c: C.danger, bg: 'rgba(255,107,107,0.08)' } }
+            const m = map[L.rating] || map.moderate
+            return <span title={`${L.soldCount} recent sales vs ${L.activeTotal} active listings`} style={{ fontFamily: F.display, fontSize: 11, fontWeight: 600, padding: '4px 12px', borderRadius: 6, background: m.bg, color: m.c }}>{m.t}</span>
+          })()}
         </div>
 
         {/* Actions */}
@@ -245,6 +252,28 @@ function FlipCard({ flip, onSave, saved, index }) {
               {!flip.compStats && flip.soldCompsEvidence && (
                 <div style={{ background: 'rgba(255,107,107,0.05)', borderLeft: '2px solid rgba(255,107,107,0.5)', borderRadius: '0 8px 8px 0', padding: '12px 16px' }}>
                   <p style={{ fontFamily: F.display, fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{flip.soldCompsEvidence}</p>
+                </div>
+              )}
+
+              {flip.costBreakdown && (
+                <div>
+                  <p style={sectionLabel}>Real cost breakdown</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {[
+                      ['Buy price', `$${flip.costBreakdown.buyPrice}`],
+                      ['Shipping in', flip.costBreakdown.inboundShipping ? `$${flip.costBreakdown.inboundShipping}` : 'Free'],
+                      [`${flip.sellPlatform} fees`, `−$${flip.costBreakdown.fees}`],
+                      ['Shipping out', `−$${flip.costBreakdown.outboundShipping}`],
+                    ].map(([k, v], i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: F.display, fontSize: 13, color: C.text2 }}>
+                        <span>{k}</span><span style={{ fontFamily: F.mono }}>{v}</span>
+                      </div>
+                    ))}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: `1px solid ${C.panelBorder}`, paddingTop: 8, marginTop: 2 }}>
+                      <span style={{ fontFamily: F.display, fontSize: 13, fontWeight: 700, color: C.text }}>Net profit</span>
+                      <span style={{ fontFamily: F.mono, fontWeight: 700, fontSize: 15, color: C.accent }}>${flip.profit}</span>
+                    </div>
+                  </div>
                 </div>
               )}
 

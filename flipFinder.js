@@ -127,22 +127,43 @@ async function searchEbay(query, maxPrice, limit = 12, sizes = []) {
       log(`   ⚠️ No listings matched sizes ${sizes.join('/')} — showing all`);
     }
   }
+
+  // Drop listings whose title clearly isn't the target item (generic/mismatched),
+  // so Claude can't pick "a random blue hoodie" for a Supreme search. If the
+  // target query is generic this filters nothing; if nothing matches, the target
+  // is skipped upstream rather than returning junk.
+  const before = items.length;
+  items = items.filter(it => titleRelevant(it.title || '', query));
+  if (items.length !== before) log(`   🎯 Relevance: ${items.length}/${before} listings actually match "${query}"`);
+
+  // #2 Screen out replicas / damaged / kids' / bundle listings — the usual
+  // explanation for an "impossible" bargain.
+  const preJunk = items.length;
+  items = items.filter(it => !isJunkListing(it.title || ''));
+  if (items.length !== preJunk) log(`   🚮 Junk screen: dropped ${preJunk - items.length} replica/damaged/kids listings`);
   log(`   📦 eBay: ${items.length} listings for "${query}"${sizes.length ? ` (sizes ${sizes.join('/')})` : ''}`);
 
-  return items.map(item => {
+  const listings = items.map(item => {
     const shipCost = item.shippingOptions?.[0]?.shippingCost?.value;
+    const pct = item.seller?.feedbackPercentage;
     return {
       title:         item.title,
       price:         parseFloat(item.price?.value || 0),
       url:           item.itemWebUrl,
       condition:     item.condition || 'Used',
       sellerName:    item.seller?.username || 'unknown',
-      sellerRating:  `${item.seller?.feedbackPercentage ?? '?'}%`,
+      sellerRating:  `${pct ?? '?'}%`,
+      sellerPct:     pct != null ? parseFloat(pct) : null,   // numeric feedback %
       sellerScore:   parseInt(item.seller?.feedbackScore || 0),
       shipping:      (!shipCost || shipCost === '0.00') ? 'Free' : `$${shipCost}`,
+      shipCost:      parseFloat(shipCost || 0),        // numeric, for true landed cost (#4)
+      itemLocation:  item.itemLocation?.country || '',
       itemId:        item.itemId,
     };
   });
+  // data.total = total ACTIVE listings matching (uncapped) — a supply signal for
+  // the liquidity/sell-through calculation.
+  return { listings, activeTotal: Number(data.total) || items.length };
 }
 
 // ── EBAY LIVE-LISTING CHECK (#3) ──────────────────────────────
@@ -218,7 +239,7 @@ async function getSoldComps(query, sizes = []) {
       if (matched.length >= 3) raw = matched;
     }
 
-    const comps = raw.slice(0, 12).map(it => ({
+    let comps = raw.map(it => ({
       title:     it.title,
       soldPrice: Math.round(parseFloat(it.price.extracted)),
       condition: it.condition || 'Unspecified',
@@ -226,9 +247,26 @@ async function getSoldComps(query, sizes = []) {
       url:       it.link,
     }));
 
-    const stats = computeCompStats(comps);
-    log(`   📊 Sold comps: ${comps.length} real sales${stats ? ` | median $${stats.median} (range $${stats.low}–$${stats.high})` : ''}`);
-    return { comps, stats };
+    // Keep comps that are actually the target item (brand/model match). Only
+    // apply if it leaves a usable set, so we still have a price signal.
+    const relevant = comps.filter(c => titleRelevant(c.title, query));
+    if (relevant.length >= 2) comps = relevant;
+
+    // CONDITION-MATCHED COMPS: a used item must be priced against USED sales.
+    // A blended median (new + used) overstates what a used piece really fetches.
+    // All three stats are computed over the SAME trimmed population so the
+    // blended median and the buckets are directly comparable.
+    const trimmed   = trimOutliers(comps);
+    const stats     = computeCompStats(trimmed);
+    const statsUsed = computeCompStats(trimOutliers(comps.filter(c => isUsedCondition(c.condition))));
+    const statsNew  = computeCompStats(trimOutliers(comps.filter(c => !isUsedCondition(c.condition) && /new/i.test(c.condition))));
+
+    comps = trimmed.slice(0, 12);   // capped list is for display only
+
+    log(`   📊 Sold comps: ${comps.length} real sales${stats ? ` | median $${stats.median} (range $${stats.low}–$${stats.high})` : ''}`
+      + `${statsUsed ? ` | used $${statsUsed.median} (${statsUsed.count})` : ''}`
+      + `${statsNew ? ` | new $${statsNew.median} (${statsNew.count})` : ''}`);
+    return { comps, stats, statsUsed, statsNew };
   } catch (err) {
     log(`   ⚠️ SerpAPI: ${err.message}`);
     return { comps: [], stats: null };
@@ -268,6 +306,113 @@ function nameMatch(a, b) {
 }
 function isUsedCondition(c = '') {
   return /pre-?owned|used|fair|acceptable/i.test(c) && !/new/i.test(c);
+}
+
+// ── RELEVANCE FILTERING ───────────────────────────────────────
+// Stops "Supreme hoodie" from matching a random blue hoodie, and keeps sold
+// comps to the ACTUAL item so the median isn't a category average. Generic
+// category words are ignored so only brand/model tokens count.
+const GENERIC_TERMS = new Set([
+  'hoodie','hoody','sweatshirt','sweater','jacket','coat','vest','tee','tshirt','shirt','crewneck',
+  'pants','sweatpants','shorts','joggers','jeans','boots','sandals','slides','hat','cap','beanie',
+  'bag','backpack','mens','womens','men','women','unisex','size','vintage','rare','authentic','new',
+  'og','the','a','with','and','for','style','fashion','casual','pullover','zip','full','long','sleeve',
+]);
+function distinctiveTokens(s) {
+  return [...new Set((s || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/)
+    .filter(t => t.length > 1 && !GENERIC_TERMS.has(t)))];
+}
+// Lenient: the item's primary (brand/model) token must appear, and for very
+// specific targets (3+ distinctive tokens) at least one more must match. Returns
+// true when the target has no distinctive tokens so we never over-filter.
+function titleRelevant(title, targetQuery) {
+  const want = distinctiveTokens(targetQuery);
+  if (!want.length) return true;
+  const have = (title || '').toLowerCase();
+  if (!have.includes(want[0])) return false;
+  if (want.length >= 3) return want.slice(1).some(t => have.includes(t));
+  return true;
+}
+// ── JUNK / REPLICA SCREENING (#2) ─────────────────────────────
+// The cheapest listing for a hyped item is usually cheap for a REASON: it's a
+// replica, damaged, a kids' size, or a bundle photo. Screening these out is the
+// difference between a real flip and a fake one.
+const JUNK_PATTERNS = [
+  /\b(replica|repl|rep|fake|unauthorized|unauthentic|mirror|1:1)\b/i,
+  /\b(inspired\s+by|style\s+of|not\s+authentic)\b/i,
+  /\b(custom|customized|painted|repaint|reworked|distressed\s+by)\b/i,
+  /\b(for\s+parts|as[-\s]?is|damaged|broken|torn|ripped|stained|moldy|water\s+damage)\b/i,
+  /\b(read\s+description|please\s+read|flaw|flaws|defect|holes?)\b/i,
+  /\b(lot\s+of|bundle\s+of|\d+\s*pairs?\b|wholesale|joblot)\b/i,
+  /\b(kids?|youth|toddler|infant|preschool|\bGS\b|\bPS\b|\bTD\b|boys|girls)\b/i,
+  /\b(empty\s+box|box\s+only|replacement\s+box|no\s+shoes|photo\s+only)\b/i,
+];
+function isJunkListing(title = '') {
+  return JUNK_PATTERNS.some(re => re.test(title));
+}
+
+// #1 A listing priced far below the item's real market value is almost always
+// counterfeit or badly damaged — not a bargain. Anything under this fraction of
+// the verified sell price is rejected rather than celebrated as a huge margin.
+const FAKE_FLOOR_RATIO = 0.45;
+
+// #4 Outbound shipping the seller eats when they ship the item on.
+function outboundShipping(category = '') {
+  return /sneaker|shoe|boot|footwear/i.test(category) ? 15 : 8;
+}
+
+// ── SELLER QUALITY GATE (#5) ──────────────────────────────────
+// A low-feedback or overseas seller on a hyped item is the classic replica
+// signature. Filter these before Claude picks. Kept lenient so we don't wipe
+// out every listing — falls back upstream if it removes them all.
+function sellerTrusted(l) {
+  const pct   = l.sellerPct;             // feedback percentage (null if unknown)
+  const score = l.sellerScore || 0;      // number of feedback ratings
+  const overseas = l.itemLocation && !/^(US|USA|United States)$/i.test(l.itemLocation);
+  if (pct != null && pct < 95) return false;   // poorly-rated seller
+  if (score < 10 && overseas)  return false;   // brand-new + overseas = replica red flag
+  if (score < 2)               return false;   // essentially no track record
+  return true;
+}
+
+// ── LIQUIDITY / SELL-THROUGH (#6) ─────────────────────────────
+// A fat margin is worthless if the item never sells. Compare recent sales
+// (soldCount, capped ~60) against current supply (activeTotal, uncapped).
+function liquidityInfo(soldCount, activeTotal) {
+  const sellThrough = activeTotal > 0 ? Math.round((soldCount / activeTotal) * 100) / 100 : null;
+  // Sell-through (sales vs current supply) beats raw sold count, which is capped
+  // at ~60 and hides saturation. Low ratio = lots of competition, sells slowly.
+  let rating;
+  if (sellThrough == null)       rating = soldCount >= 8 ? 'liquid' : soldCount >= 3 ? 'moderate' : 'slow';
+  else if (soldCount < 3)        rating = 'slow';
+  else if (sellThrough >= 0.5)   rating = 'liquid';
+  else if (sellThrough >= 0.15)  rating = 'moderate';
+  else                           rating = 'slow';   // saturated: supply ≫ recent sales
+  return { soldCount, activeTotal, sellThrough, rating };
+}
+
+// Drop price outliers (rare/mislabelled listings) before taking the median, so a
+// couple of grails don't inflate a streetwear comp set.
+function trimOutliers(comps) {
+  if (comps.length < 4) return comps;
+  const sorted = [...comps].sort((a, b) => a.soldPrice - b.soldPrice);
+  const mid = sorted[Math.floor(sorted.length / 2)].soldPrice;
+  const kept = comps.filter(c => c.soldPrice >= mid * 0.4 && c.soldPrice <= mid * 2.5);
+  return kept.length >= 3 ? kept : comps;
+}
+
+// Send the user straight to the correct marketplace's search for the item, so
+// "Sell on GOAT" opens goat.com — not an eBay page.
+function sellVenueUrl(venue, query) {
+  const q = encodeURIComponent(query || '');
+  switch ((venue || '').toLowerCase()) {
+    case 'stockx':               return `https://stockx.com/search?s=${q}`;
+    case 'goat':                 return `https://www.goat.com/search?query=${q}`;
+    case 'depop':                return `https://www.depop.com/search/?q=${q}`;
+    case 'poshmark':             return `https://poshmark.com/search?query=${q}`;
+    case 'facebook marketplace': return `https://www.facebook.com/marketplace/search/?query=${q}`;
+    default:                     return `https://www.ebay.com/sch/i.html?_nkw=${q}`;   // eBay
+  }
 }
 
 async function getSneakerPrice(styleId, sizes = [], expectedName = '') {
@@ -474,17 +619,19 @@ async function getSearchTargets(categories, maxBudget, sizes = []) {
 
   const res = await client.messages.create({
     model:      'claude-sonnet-4-6',
-    max_tokens: 1500,
+    max_tokens: 3000,   // 8 detailed target objects need the headroom
     system:     'You are a resale expert. Return ONLY a valid JSON array. No markdown, no explanation.',
     messages: [{
       role:    'user',
-      content: `Return 5 specific items that are frequently underpriced on eBay and can be flipped for profit.
+      content: `Return 8 specific items that are frequently underpriced on eBay and can be flipped for profit. (We filter hard for fakes/damaged/illiquid items downstream, so give a healthy list of candidates.)
 
 Categories: ${categories.join(', ')}
 Max buy budget: $${maxBudget}${sizeNote}
 
 STRICT RULES:
 - Items must be WEARABLE clothing or footwear only — no keychains, posters, novelty items, accessories, or collectibles
+- searchQuery MUST name a SPECIFIC model + defining detail (brand + model + colorway/version), NEVER a generic category. This is critical: a vague query returns junk listings. BAD: "Supreme hoodie", "Carhartt jacket", "Nike shoes", "vintage tee". GOOD: "Supreme Box Logo Hoodie", "Carhartt Detroit Blanket Lined Jacket", "Nike Dunk Low Panda", "Nike Air Max 90 Infrared"
+- expectedSellMin must be CONSERVATIVE — the price a normal used/common example actually sells for on the platform, NOT a rare/mint/grail example. Better to understate than overstate.
 - searchQuery must only match adult-sized wearable items (2-5 words, no size info)
 - expectedBuyMax must be at least $20 and at most $${maxBudget}
 - expectedSellMin must be realistic based on actual recent resale data
@@ -493,7 +640,7 @@ STRICT RULES:
 - authChecks: 1 sentence, key authentication point for this exact item
 - styleId: for SNEAKERS ONLY, the official manufacturer style code / SKU (e.g. "DD1391-100" for Nike Dunk Low Panda, "555088-101" for Jordan 1 Chicago). This must be the real, exact SKU — it is used to look up the live StockX price. Use null for non-sneakers OR if you are not certain of the exact SKU. NEVER guess a SKU.
 
-Return ONLY this JSON array (5 objects):
+Return ONLY this JSON array (8 objects):
 [
   {
     "searchQuery": "Nike Dunk Low Panda",
@@ -518,9 +665,21 @@ Return ONLY this JSON array (5 objects):
 }
 
 // ── STEP 2: Claude analyzes real data and picks best flip ──────
-async function analyzeListings(target, listings, soldComps, sizes = [], market = null) {
+async function analyzeListings(target, listings, soldComps, sizes = [], market = null, activeTotal = 0) {
   if (!listings.length) return null;
   log(`🧠 Analyzing "${target.searchQuery}"...`);
+
+  // #5 SELLER GATE: drop untrustworthy sellers before Claude sees them. If it
+  // would remove everything, keep the set (a thin-history market) — the flip
+  // just won't be high confidence.
+  const trusted = listings.filter(sellerTrusted);
+  if (trusted.length && trusted.length < listings.length) {
+    log(`   👤 Seller gate: dropped ${listings.length - trusted.length} low-trust/overseas sellers`);
+    listings = trusted;
+  } else if (!trusted.length) {
+    log(`   👤 Seller gate: all sellers weak — keeping but capping confidence`);
+  }
+  const weakSellers = !trusted.length;
 
   const sizeNote = sizes.length
     ? `\nTARGET SIZE(S): US men's ${sizes.join(', ')}. Prefer listings whose title names one of these sizes. The sell price and sold comps must reflect THIS size — value varies widely by size.`
@@ -530,6 +689,8 @@ async function analyzeListings(target, listings, soldComps, sizes = [], market =
   // in code). `market` is a live StockX/GOAT price (or null).
   const comps = soldComps.comps || [];
   const stats = soldComps.stats;
+  const statsUsed = soldComps.statsUsed || null;   // condition-matched buckets
+  const statsNew  = soldComps.statsNew  || null;
   const ebayVerified = stats !== null;
 
   // Price basis priority: live market (StockX/PriceCharting) > eBay sold median
@@ -558,6 +719,23 @@ async function analyzeListings(target, listings, soldComps, sizes = [], market =
   let fees = sellVenue === 'StockX'
     ? Math.round(sellPrice * 0.095 + 5)
     : Math.round(sellPrice * 0.13);
+
+  // ── #1 FAKE FLOOR ──────────────────────────────────────────────────────
+  // A listing far below real market value is a counterfeit or a wreck, not a
+  // bargain. Previously we sorted cheapest-first and handed Claude exactly
+  // these — which is why margins looked impossible. Reject them outright.
+  if (verified) {
+    const priceFloor = Math.round(sellPrice * FAKE_FLOOR_RATIO);
+    const credible   = listings.filter(l => l.price >= priceFloor);
+    if (credible.length < listings.length) {
+      log(`   🛡️ Fake floor $${priceFloor} (${Math.round(FAKE_FLOOR_RATIO * 100)}% of $${sellPrice}): dropped ${listings.length - credible.length} suspiciously cheap listings`);
+    }
+    if (!credible.length) {
+      log(`   ⚠️ Every listing for "${target.searchQuery}" is below the credible floor — likely all replicas. Skipping.`);
+      return null;
+    }
+    listings = credible;
+  }
 
   const res = await client.messages.create({
     model:      'claude-sonnet-4-6',
@@ -588,7 +766,8 @@ Instructions:
 - Avoid "Fair" condition unless price is exceptionally low
 - directBuyUrl MUST be the exact url field from the listing you chose
 - sellPrice MUST equal $${sellPrice} (the verified price above)
-- profit = sellPrice - buyPrice - fees
+- profit = sellPrice - (buyPrice + inbound shipping) - fees - outbound shipping (shipping is added by the system, so don't worry about exact figures)
+- A price that looks too good to be true usually means a replica or a damaged item — prefer a credible mid-priced listing from a strong seller over the absolute cheapest
 - margin = Math.round((profit / buyPrice) * 100)
 - Include the result even if margin is only 15% — modest is fine
 - confidence: "high" if margin >35%, "medium" if 22-35%, "low" if 15-22%
@@ -662,27 +841,71 @@ Return ONLY this JSON object:
     log(`   ✅ Live listing @ $${chosen.price} (${chosen.condition})`);
   }
 
-  // ── #2 CONDITION GUARD ─────────────────────────────────────────────────
-  // A deadstock StockX price assumes a NEW pair. If the buy listing is used,
-  // that sell price is unrealistic — prefer the eBay sold median (mixed
-  // condition), else discount the market price. Sell a used pair on eBay.
+  // ── CONDITION-MATCHED PRICING ──────────────────────────────────────────
+  // Price the item against sales of the SAME condition. A used piece compared
+  // to a new/used blended median (or a deadstock ask) always looks more
+  // profitable than it is. Falls back to the blended median when a condition
+  // bucket is too thin to trust.
+  const MIN_BUCKET  = 3;
+  const buyCond     = chosen?.condition || flip.condition || '';
+  const buyIsUsed   = isUsedCondition(buyCond);
+  const matched     = buyIsUsed ? statsUsed : statsNew;
+  const haveMatched = matched && matched.count >= MIN_BUCKET;
+  const condLabel   = buyIsUsed ? 'used' : 'new';
   let suppressMarketUI = false;
-  if (market && isUsedCondition(chosen?.condition || flip.condition || '')) {
-    const cond = (chosen?.condition || flip.condition || 'used').toLowerCase();
+
+  // Sanity: used should never comp HIGHER than new. When it does, the comp set
+  // is mixing different products (e.g. rare vintage), so the buckets can't be
+  // trusted — fall back to the most conservative figure and flag it.
+  const bucketsIncoherent = !!(statsUsed && statsNew && statsUsed.median > statsNew.median * 1.1);
+  // Condition-matching may only make a used item CHEAPER, never more valuable
+  // than the blended market. This stops the guard from inventing new fake deals.
+  const conditionMatchedPrice = (() => {
+    if (!haveMatched) return null;
+    let p = matched.median;
+    if (buyIsUsed) {
+      if (ebayVerified) p = Math.min(p, stats.median);          // never above blended
+      if (statsNew)     p = Math.min(p, statsNew.median);       // never above new
+    } else if (ebayVerified) {
+      p = Math.min(p, Math.round(stats.median * 1.4));          // new can exceed, but bounded
+    }
+    return Math.round(p);
+  })();
+  if (bucketsIncoherent) log(`   ⚠️ Comp buckets incoherent (used $${statsUsed.median} > new $${statsNew.median}) — using conservative price`);
+
+  if (market && buyIsUsed) {
+    // A deadstock StockX ask never applies to a pre-owned pair.
     sellVenue = 'eBay';
-    suppressMarketUI = true;   // hide deadstock panel; eBay comps panel matches the price
-    if (ebayVerified) {
+    suppressMarketUI = true;   // hide deadstock panel; comps panel matches the price
+    if (haveMatched && conditionMatchedPrice) {
+      sellPrice     = conditionMatchedPrice;
+      priceSource   = 'eBay sold comps · used only';
+      priceEvidence = `Buy is ${buyCond.toLowerCase()}; deadstock ${market.source} ($${market.sellPrice}) doesn't apply. ${matched.count} USED eBay sales · median $${sellPrice}.`;
+    } else if (ebayVerified) {
       sellPrice     = stats.median;
       priceSource   = 'eBay sold comps (used buy)';
-      priceEvidence = `Buy listing is ${cond}; deadstock ${market.source} ($${market.sellPrice}) doesn't apply. Using ${stats.count} real eBay sales · median $${stats.median}.`;
+      priceEvidence = `Buy is ${buyCond.toLowerCase()}; deadstock ${market.source} ($${market.sellPrice}) doesn't apply. Using ${stats.count} eBay sales · median $${stats.median} (too few used-only comps to isolate).`;
     } else {
       sellPrice     = Math.round(market.sellPrice * USED_DISCOUNT);
       priceSource   = `${market.source} (used −${Math.round((1 - USED_DISCOUNT) * 100)}%)`;
-      priceEvidence = `Buy listing is ${cond}; discounted deadstock ${market.source} by ${Math.round((1 - USED_DISCOUNT) * 100)}% → $${sellPrice}.`;
+      priceEvidence = `Buy is ${buyCond.toLowerCase()}; discounted deadstock ${market.source} by ${Math.round((1 - USED_DISCOUNT) * 100)}% → $${sellPrice}.`;
     }
     fees = Math.round(sellPrice * 0.13);
-    log(`   🩹 Used buy detected (${cond}) → sell $${sellPrice} via eBay`);
+    log(`   🩹 Used buy (${buyCond.toLowerCase()}) → sell $${sellPrice} via eBay`);
+
+  } else if (!market && ebayVerified && haveMatched && conditionMatchedPrice && conditionMatchedPrice !== sellPrice) {
+    // Pricing off eBay comps — swap the blended median for the matching condition.
+    const wasPrice = sellPrice;
+    sellPrice     = conditionMatchedPrice;
+    priceSource   = `eBay sold comps · ${condLabel} only`;
+    priceEvidence = `${matched.count} ${condLabel}-condition eBay sales · median $${sellPrice}`
+      + (bucketsIncoherent ? ' (comp set is mixed — treat as a rough guide)' : '');
+    fees = sellVenue === 'StockX' ? Math.round(sellPrice * 0.095 + 5) : Math.round(sellPrice * 0.13);
+    log(`   ⚖️ Condition-matched (${condLabel}): $${wasPrice} blended → $${sellPrice}`);
   }
+
+  // Incoherent comps mean the price is a rough guide at best.
+  if (bucketsIncoherent) flip.confidence = 'low';
 
   // ── Pin the verifiable fields to REAL data so the model can't drift ──
   // Sell price, source and evidence are authoritative from the resolved price
@@ -698,9 +921,39 @@ Return ONLY this JSON object:
   flip.marketData        = (market && !suppressMarketUI) ? market.marketData : null; // live market snapshot for the UI
   flip.estimatedFees     = fees;
 
+  // An estimate-only sell price (no market, no comps) is never "high confidence".
+  if (!verified) flip.confidence = 'low';
+
+  // ── #4 TRUE LANDED COST ────────────────────────────────────────────────
+  // Real profit = sell − (buy + shipping IN) − platform fees − shipping OUT.
+  // Margin is measured against total cash out, not just the buy price.
   buyPriceNum = Number(flip.buyPrice) || 0;
-  flip.profit = Math.round(sellPrice - buyPriceNum - fees);
-  flip.margin = buyPriceNum ? Math.round((flip.profit / buyPriceNum) * 100) : 0;
+  const inboundShip  = Number(chosen?.shipCost) || 0;
+  const outboundShip = outboundShipping(target.category);
+  const landedCost   = Math.round((buyPriceNum + inboundShip) * 100) / 100;
+
+  flip.profit = Math.round(sellPrice - landedCost - fees - outboundShip);
+  flip.margin = landedCost ? Math.round((flip.profit / landedCost) * 100) : 0;
+  flip.costBreakdown = {
+    buyPrice: buyPriceNum, inboundShipping: inboundShip,
+    fees, outboundShipping: outboundShip, landedCost,
+  };
+  flip.feesBreakdown = `${sellVenue} fees $${fees} + $${outboundShip} ship out`
+    + (inboundShip ? ` · $${inboundShip} ship in` : ' · free ship in');
+
+  // ── #6 LIQUIDITY ───────────────────────────────────────────────────────
+  // How readily this actually sells. A slow mover with a fat margin is a trap.
+  const soldCount = stats?.count || 0;
+  flip.liquidity = liquidityInfo(soldCount, activeTotal);
+  log(`   💧 Liquidity: ${flip.liquidity.rating} (${soldCount} sold vs ${activeTotal} active${flip.liquidity.sellThrough != null ? `, ${flip.liquidity.sellThrough} sell-through` : ''})`);
+
+  // Confidence never exceeds what the weakest signal supports.
+  if (flip.liquidity.rating === 'slow') {
+    flip.confidence = 'low';
+    flip.redFlags = [...(Array.isArray(flip.redFlags) ? flip.redFlags : flip.redFlags ? [flip.redFlags] : []),
+      `Slow seller — only ${soldCount} recent sales against ${activeTotal} active listings; may sit unsold.`];
+  }
+  if (weakSellers && flip.confidence === 'high') flip.confidence = 'medium';
 
   // Attach buy/sell links
   flip.buyLinks = [
@@ -716,10 +969,9 @@ Return ONLY this JSON object:
     },
   ];
 
+  // Link straight to the actual sell platform (goat.com, depop.com, …), not eBay.
   const sellUrl = market?.links?.sell
-    || (sellVenue === 'StockX'
-          ? `https://stockx.com/search?s=${encodeURIComponent(target.stockxQuery)}`
-          : `https://www.ebay.com/sch/i.html?_nkw=${q}&LH_Sold=1&LH_Complete=1`);
+    || sellVenueUrl(sellVenue, target.stockxQuery || target.searchQuery);
   flip.sellLinks = [
     {
       platform: sellVenue,
@@ -765,6 +1017,8 @@ function normalize(flip, i, categories) {
     directBuyUrl:      flip.directBuyUrl      || '',
     verified:          flip.verified === true,
     priceSource:       flip.priceSource       || '',
+    costBreakdown:     flip.costBreakdown     || null,
+    liquidity:         flip.liquidity         || null,
     compStats:         flip.compStats         || null,
     compsPeriod:       flip.compsPeriod        || '',
     soldComps:         Array.isArray(flip.soldComps) ? flip.soldComps : [],
@@ -795,18 +1049,19 @@ export async function findFlips(categories = [], maxBudget = 100, platforms = ['
       const tSizes = /sneaker|shoe|footwear/i.test(target.category || '') ? sizes : [];
       // getMarketPrice dispatches by category and self-gates (sneakers need a
       // styleId; cards/games need PriceCharting enabled) → no wasted API calls.
-      const [listings, soldComps, market] = await Promise.all([
+      const [ebay, soldComps, market] = await Promise.all([
         searchEbay(target.searchQuery, target.expectedBuyMax, 12, tSizes),
         getSoldComps(target.searchQuery, tSizes),
         getMarketPrice(target, tSizes),
       ]);
+      const { listings, activeTotal } = ebay;
 
       if (!listings.length) {
         log(`   ⚠️ No eBay listings — skipping`);
         continue;
       }
 
-      const flip = await analyzeListings(target, listings, soldComps, tSizes, market);
+      const flip = await analyzeListings(target, listings, soldComps, tSizes, market, activeTotal);
       if (!flip) { log(`   ⚠️ Claude returned no result`); continue; }
 
       const profit   = Number(flip.profit);

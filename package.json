@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "concurrently \"node server.js\" \"npm --prefix client run dev\"",
     "server": "node server.js",
-    "client": "npm --prefix client run dev"
+    "client": "npm --prefix client run dev",
+    "build": "npm --prefix client install && npm --prefix client run build",
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
