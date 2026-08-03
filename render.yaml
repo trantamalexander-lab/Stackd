@@ -10,6 +10,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DAILY_SCAN_LIMIT      # hard cap on total scans/day across all users
+        value: "100"
       # Secrets — set these in the Render dashboard, do NOT commit real values:
       - key: ANTHROPIC_API_KEY
         sync: false

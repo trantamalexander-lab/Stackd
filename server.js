@@ -37,6 +37,22 @@ const generalLimiter = rateLimit({
 
 app.use('/api/', generalLimiter);
 
+// ── Global daily scan cap ──────────────────────────────────────
+// Per-IP limits don't stop many different visitors from collectively burning
+// the API budget. This is a hard ceiling on TOTAL scans/day across everyone —
+// a cost circuit-breaker. Resets at UTC midnight; also resets on restart.
+// Tune with env DAILY_SCAN_LIMIT (default 100).
+const DAILY_SCAN_LIMIT = Number(process.env.DAILY_SCAN_LIMIT) || 100;
+let scanDay = new Date().getUTCDate();
+let scanCount = 0;
+function underDailyCap() {
+  const today = new Date().getUTCDate();
+  if (today !== scanDay) { scanDay = today; scanCount = 0; }   // new day → reset
+  if (scanCount >= DAILY_SCAN_LIMIT) return false;
+  scanCount++;
+  return true;
+}
+
 // ── Input validation ───────────────────────────────────────────
 const VALID_CATEGORIES = ['Sneakers','Streetwear','Electronics','Sports Cards','Video Games','Vintage','Watches','Trading Cards'];
 const VALID_PLATFORMS  = ['eBay','Facebook Marketplace','StockX','Depop','Poshmark'];
@@ -63,6 +79,12 @@ app.post('/api/flips', flipLimiter, async (req, res) => {
 
   const validationError = validateFlipRequest(req.body);
   if (validationError) return res.status(400).json({ error: validationError });
+
+  // Cost circuit-breaker: hard stop once the whole site hits its daily budget.
+  if (!underDailyCap()) {
+    console.warn(`[Stackd] 🛑 Global daily scan cap (${DAILY_SCAN_LIMIT}) reached — blocking scans until UTC midnight`);
+    return res.status(429).json({ error: 'Stackd hit its daily scan limit — check back tomorrow!' });
+  }
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set in environment' });
