@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findFlips, lastQuota } from './flipFinder.js';
+import { stripe, getUserFromToken, getOrCreateCustomer, syncSubscriptionToProfile, priceForPlan } from './subscriptions.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -14,6 +15,30 @@ const PORT = process.env.PORT || 3001;   // hosts (Render, etc.) inject PORT
 // the Vite server on :3000 calls the API cross-origin.
 app.use(cors({ origin: process.env.NODE_ENV === 'production' ? true : 'http://localhost:3000' }));
 app.set('trust proxy', 1);   // correct client IPs behind the host's proxy (rate limits)
+
+// ── Stripe webhook ── MUST come before express.json(): Stripe signs the RAW
+// body, so it can't be pre-parsed. This is how "someone paid" reaches our DB.
+app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('[Stripe] webhook signature failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+  try {
+    if (event.type === 'checkout.session.completed') {
+      const s = event.data.object;
+      if (s.subscription) await syncSubscriptionToProfile(await stripe.subscriptions.retrieve(s.subscription));
+    } else if (event.type.startsWith('customer.subscription.')) {
+      await syncSubscriptionToProfile(event.data.object);
+    }
+    res.json({ received: true });
+  } catch (err) {
+    console.error('[Stripe] webhook handler error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 app.use(express.json({ limit: '10kb' })); // reject oversized payloads
 
 // ── Rate limiters ──────────────────────────────────────────────
@@ -102,6 +127,46 @@ app.post('/api/flips', flipLimiter, async (req, res) => {
     res.json({ flips, quota: lastQuota });
   } catch (err) {
     console.error('[Stackd] Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ── Stripe: start a subscription checkout (web only) ──
+   The logged-in app sends its Supabase token; we tie the Stripe subscription to
+   that user so the webhook can unlock Pro for them. */
+app.post('/api/create-checkout-session', async (req, res) => {
+  try {
+    const user = await getUserFromToken(req.headers.authorization);
+    if (!user) return res.status(401).json({ error: 'Please log in first.' });
+
+    const price = priceForPlan(req.body?.plan);
+    if (!price) return res.status(400).json({ error: 'Unknown plan.' });
+
+    const customer = await getOrCreateCustomer(user);
+    const APP_URL = process.env.APP_URL || 'https://stackd-ypim.onrender.com';
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer,
+      line_items: [{ price, quantity: 1 }],
+      allow_promotion_codes: true,
+      metadata: { supabase_user_id: user.id, plan: req.body.plan },
+      success_url: `${APP_URL}/success?session_id={CHECKOUT_SESSION_ID}&plan=${req.body.plan}`,
+      cancel_url: `${APP_URL}/cancel`,
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('[Stripe] checkout error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ── Stripe: confirm a completed checkout (used by the success screen) ── */
+app.get('/api/verify-session', async (req, res) => {
+  try {
+    if (!req.query.session_id) return res.status(400).json({ error: 'Missing session_id' });
+    const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
+    res.json({ paid: session.payment_status === 'paid', plan: session.metadata?.plan || null });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });

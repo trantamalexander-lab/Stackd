@@ -388,3 +388,9 @@ input[type='range']::-moz-range-thumb {
   .hero-carousel-outer { height: 230px; }
   .stats-grid { grid-template-columns: 1fr 1fr !important; }
 }
+
+/* ── Hero (minimal) responsive ── */
+@media (max-width: 900px) {
+  .hero-grid { grid-template-columns: 1fr !important; gap: 44px !important; }
+  .hero-card { max-width: 420px; }
+}

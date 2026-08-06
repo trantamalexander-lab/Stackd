@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stackd — Turn resale into real money</title>
+<meta name="description" content="Stackd scans real listings, verifies real sold prices, and shows you exactly what to flip for profit. Download the app." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0A0A; --panel:rgba(255,255,255,0.03); --border:rgba(255,255,255,0.08);
+    --border2:rgba(255,255,255,0.14); --gold:#F0B429; --goldbg:rgba(240,180,41,0.08);
+    --text:#fff; --text2:#999; --text3:#555; --disp:'Space Grotesk',system-ui,sans-serif; --mono:'Space Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:var(--disp);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+
+  /* NAV */
+  header{position:sticky;top:0;z-index:50;background:rgba(10,10,10,0.82);backdrop-filter:blur(18px);border-bottom:1px solid var(--border)}
+  nav{height:66px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.18em;font-size:16px}
+  .navlinks{display:flex;align-items:center;gap:28px}
+  .navlinks a{font-size:14px;color:var(--text2);font-weight:500;transition:color .15s}
+  .navlinks a:hover{color:var(--text)}
+  .navstore{display:flex;gap:10px}
+  .store{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:9px;border:1px solid var(--border2);background:#111;font-size:12px;font-weight:600;transition:border-color .15s,transform .15s}
+  .store:hover{border-color:var(--gold);transform:translateY(-1px)}
+  .store small{display:block;font-size:9px;color:var(--text2);font-weight:400;line-height:1}
+  .store b{font-size:13px;line-height:1.1}
+
+  /* HERO */
+  .hero{position:relative;overflow:hidden}
+  .glow{position:absolute;top:-20%;right:-5%;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(240,180,41,0.09),transparent 62%);pointer-events:none}
+  .herogrid{position:relative;display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;padding:clamp(48px,8vw,96px) 0}
+  .pill{display:inline-flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:999px;padding:7px 14px 7px 8px;font-size:13px;color:var(--text2);margin-bottom:26px}
+  .avatars{display:flex}
+  .avatars span{width:26px;height:26px;border-radius:50%;border:2px solid var(--bg);margin-left:-8px;background:linear-gradient(135deg,#333,#555)}
+  .avatars span:first-child{margin-left:0}
+  .star{color:var(--gold)}
+  h1{font-size:clamp(38px,6vw,64px);line-height:1.03;letter-spacing:-.03em;font-weight:700}
+  h1 .thin{font-weight:300;display:block}
+  h1 .gold{color:var(--gold)}
+  .sub{font-size:clamp(15px,1.5vw,18px);color:var(--text2);line-height:1.6;max-width:440px;margin:22px 0 30px}
+  .dlrow{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .store.big{height:54px;padding:0 20px}
+  .store.big b{font-size:15px}
+  .qr{display:none;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:12px 16px}
+  .qr .box{width:84px;height:84px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center}
+  .qr .box img{width:78px;height:78px}
+  .qr p{font-size:13px;color:var(--text2);line-height:1.4;max-width:150px}
+
+  /* PHONE MOCKUP */
+  .phonewrap{display:flex;justify-content:center}
+  .phone{position:relative;width:270px;height:560px;border-radius:42px;background:#050505;border:9px solid #1a1a1a;box-shadow:0 40px 90px rgba(0,0,0,.6);padding:16px 14px;overflow:hidden}
+  .notch{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:110px;height:22px;background:#000;border-radius:0 0 14px 14px;z-index:2}
+  .screen{height:100%;display:flex;flex-direction:column;padding-top:24px}
+  .sc-brand{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.16em;color:var(--text);margin-bottom:16px;justify-content:center}
+  .fcard{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px}
+  .fcard .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-family:var(--mono);font-size:10px;color:var(--text3)}
+  .vchip{color:var(--gold);background:var(--goldbg);border-radius:999px;padding:3px 8px;font-family:var(--disp);font-size:9px;font-weight:600}
+  .fname{font-size:13px;font-weight:600;margin-bottom:2px}
+  .fmeta{font-size:10px;color:var(--text3);margin-bottom:14px}
+  .bsrow{display:flex;justify-content:space-between;align-items:flex-end}
+  .bsrow .lbl{font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:3px}
+  .bsrow .num{font-family:var(--mono);font-weight:700;font-size:20px}
+  .bsrow .num.gold{color:var(--gold)}
+  .profit{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);margin-top:14px;padding-top:12px;font-size:12px;color:var(--text2)}
+  .profit b{font-family:var(--mono);color:var(--gold);font-size:16px}
+
+  /* SECTIONS */
+  section{padding:clamp(60px,9vw,110px) 0}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+  h2{font-size:clamp(30px,4.5vw,46px);font-weight:700;letter-spacing:-.02em;line-height:1.1}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
+  .step{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:30px 26px}
+  .step .n{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--gold);margin-bottom:16px}
+  .step h3{font-size:19px;font-weight:600;margin-bottom:8px}
+  .step p{font-size:14px;color:var(--text2);line-height:1.6}
+
+  .faq{max-width:720px;margin:40px auto 0}
+  details{border-bottom:1px solid var(--border);padding:20px 4px}
+  summary{list-style:none;cursor:pointer;font-size:17px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:'+';color:var(--gold);font-size:22px;font-weight:400}
+  details[open] summary::after{content:'\2013'}
+  details p{color:var(--text2);font-size:14.5px;line-height:1.65;margin-top:12px}
+
+  footer{border-top:1px solid var(--border);padding:48px 0}
+  .foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px}
+  .foot .social{display:flex;gap:20px}
+  .foot .social a{font-size:14px;color:var(--text2)}
+  .foot .social a:hover{color:var(--gold)}
+  .foot small{color:var(--text3);font-size:13px}
+
+  /* responsive */
+  @media(max-width:860px){
+    .navlinks{display:none}
+    .herogrid{grid-template-columns:1fr;gap:44px;text-align:center}
+    .pill,.dlrow{justify-content:center}
+    .sub{margin-left:auto;margin-right:auto}
+    .steps{grid-template-columns:1fr}
+    .navstore .store small{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap"><nav>
+    <a class="brand" href="#top">
+      <svg width="24" height="24" viewBox="0 0 120 96" fill="none" aria-label="Stackd"><polygon points="60,7 75,27 45,27" fill="#F0B429"/><polygon points="32,42 60,24 88,42 71,42 60,36 49,42" fill="#F0B429"/><polygon points="22,57 60,39 98,57 81,57 60,51 39,57" fill="#F0B429"/><polygon points="12,72 60,54 108,72 91,72 60,66 29,72" fill="#F0B429"/><polygon points="3,87 60,69 117,87 100,87 60,81 20,87" fill="#F0B429"/></svg>
+      STACKD
+    </a>
+    <div class="navlinks">
+      <a href="#how">How it works</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://app.stackxd.com">Login</a>
+      <a href="https://app.stackxd.com">Manage Subscription</a>
+    </div>
+    <div class="navstore">
+      <a class="store" data-store="ios" href="#"><span>&#63743;</span><span><small>Download on the</small><b>App Store</b></span></a>
+      <a class="store" data-store="android" href="#"><span>&#9654;</span><span><small>Get it on</small><b>Google Play</b></span></a>
+    </div>
+  </nav></div>
+</header>
+
+<a id="top"></a>
+<main class="hero"><div class="wrap">
+  <div class="glow"></div>
+  <div class="herogrid">
+    <div>
+      <div class="pill">
+        <div class="avatars"><span></span><span></span><span></span></div>
+        Loved by early flippers · <span class="star">&#9733;</span> making real money
+      </div>
+      <h1><span class="thin">Turn resale into</span>real <span class="gold">money.</span></h1>
+      <p class="sub">Stackd scans real listings, verifies real sold prices, and shows you exactly what to flip for profit — buy price, sell price, and the margin. No guesswork, no fakes.</p>
+      <div class="dlrow">
+        <a class="store big" data-store="ios" href="#"><span>&#63743;</span><span><small>Download on the</small><b>App Store</b></span></a>
+        <a class="store big" data-store="android" href="#"><span>&#9654;</span><span><small>Get it on</small><b>Google Play</b></span></a>
+        <div class="qr" id="qr">
+          <div class="box"><img id="qrimg" alt="Scan to download"/></div>
+          <p>Scan to download on your phone</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="sc-brand">
+            <svg width="16" height="16" viewBox="0 0 120 96"><polygon points="60,7 75,27 45,27" fill="#F0B429"/><polygon points="32,42 60,24 88,42 71,42 60,36 49,42" fill="#F0B429"/><polygon points="22,57 60,39 98,57 81,57 60,51 39,57" fill="#F0B429"/><polygon points="12,72 60,54 108,72 91,72 60,66 29,72" fill="#F0B429"/></svg>
+            STACKD
+          </div>
+          <div class="fcard">
+            <div class="top"><span>FLIP · 001</span><span class="vchip">&#10003; Verified</span></div>
+            <div class="fname">Air Jordan 1 Retro Chicago</div>
+            <div class="fmeta">Sneakers · 12 real sold comps</div>
+            <div class="bsrow">
+              <div><div class="lbl">Buy</div><div class="num">$128</div></div>
+              <div style="text-align:right"><div class="lbl">Sell</div><div class="num">$310</div></div>
+            </div>
+            <div class="profit">Net profit <b>+$182</b></div>
+          </div>
+          <div class="fcard">
+            <div class="top"><span>FLIP · 002</span><span class="vchip">&#10003; Verified</span></div>
+            <div class="fname">Supreme Box Logo Hoodie</div>
+            <div class="fmeta">Streetwear · 18 real sold comps</div>
+            <div class="bsrow">
+              <div><div class="lbl">Buy</div><div class="num">$130</div></div>
+              <div style="text-align:right"><div class="lbl">Sell</div><div class="num">$228</div></div>
+            </div>
+            <div class="profit">Net profit <b>+$64</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></main>
+
+<section id="how"><div class="wrap">
+  <div class="eyebrow">How it works</div>
+  <h2>Three steps to your first flip.</h2>
+  <div class="steps">
+    <div class="step"><div class="n">01</div><h3>Scan for deals</h3><p>Pick what you know — sneakers, streetwear, cards — and set your budget. Stackd scans thousands of real listings.</p></div>
+    <div class="step"><div class="n">02</div><h3>See the margins</h3><p>Get the buy price, the verified sell price from real sold comps, and your actual profit after fees. No fakes.</p></div>
+    <div class="step"><div class="n">03</div><h3>Buy &amp; resell</h3><p>Follow the direct links, buy the item, and flip it on the right platform. Keep the profit.</p></div>
+  </div>
+</div></section>
+
+<section id="faq" style="background:rgba(255,255,255,0.015)"><div class="wrap">
+  <div class="eyebrow" style="text-align:center">FAQ</div>
+  <h2 style="text-align:center">Questions, answered.</h2>
+  <div class="faq">
+    <details><summary>Is Stackd free?</summary><p>You can download and start finding flips for free. Pro unlocks more scans and priority results — you subscribe on the web and it unlocks across the app.</p></details>
+    <details><summary>Are the deals real?</summary><p>Yes. Stackd only shows flips backed by real, recent sold prices — and it filters out fakes, damaged listings, and prices that are too good to be true.</p></details>
+    <details><summary>Do I need experience to flip?</summary><p>No. Stackd gives you the buy price, sell price, profit, and a step-by-step guide for each flip. Start with what you already know.</p></details>
+    <details><summary>Which platforms does it cover?</summary><p>eBay, StockX, GOAT, Depop, Poshmark and more — for sneakers, streetwear, cards, and games.</p></details>
+  </div>
+</div></section>
+
+<footer><div class="wrap"><div class="foot">
+  <a class="brand" href="#top">
+    <svg width="22" height="22" viewBox="0 0 120 96"><polygon points="60,7 75,27 45,27" fill="#F0B429"/><polygon points="32,42 60,24 88,42 71,42 60,36 49,42" fill="#F0B429"/><polygon points="22,57 60,39 98,57 81,57 60,51 39,57" fill="#F0B429"/><polygon points="12,72 60,54 108,72 91,72 60,66 29,72" fill="#F0B429"/><polygon points="3,87 60,69 117,87 100,87 60,81 20,87" fill="#F0B429"/></svg>
+    STACKD
+  </a>
+  <div class="social">
+    <a href="#">TikTok</a><a href="#">Instagram</a><a href="#">X</a>
+  </div>
+  <small>&copy; 2026 Stackd. All rights reserved.</small>
+</div></div></footer>
+
+<script>
+  // App store links (fill these in once the app is approved)
+  var IOS_URL = 'https://apps.apple.com/app/stackd';        // placeholder
+  var ANDROID_URL = 'https://play.google.com/store/apps/details?id=com.stackxd.app'; // placeholder
+  var ua = navigator.userAgent || '';
+  var isIOS = /iPhone|iPad|iPod/i.test(ua);
+  var isAndroid = /Android/i.test(ua);
+  var isMobile = isIOS || isAndroid;
+
+  document.querySelectorAll('[data-store]').forEach(function(a){
+    a.href = a.getAttribute('data-store') === 'ios' ? IOS_URL : ANDROID_URL;
+  });
+
+  if (isMobile) {
+    // On a phone: keep only the relevant store button prominent, hide QR
+    document.querySelectorAll('.dlrow .store').forEach(function(b){
+      var s = b.getAttribute('data-store');
+      if ((isIOS && s==='android') || (isAndroid && s==='ios')) b.style.display='none';
+    });
+  } else {
+    // On desktop: show a QR so they can scan with their phone
+    var qr = document.getElementById('qr');
+    if (qr) {
+      qr.style.display='flex';
+      document.getElementById('qrimg').src =
+        'https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&data=' + encodeURIComponent('https://stackxd.com');
+    }
+  }
+</script>
+</body>
+</html>

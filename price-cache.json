@@ -202,13 +202,13 @@
   "sneaker|BB550WT1|any": {
     "data": {
       "source": "StockX (lowest ask)",
-      "sellPrice": 50,
-      "stockX": 50,
-      "goat": 28,
+      "sellPrice": 49,
+      "stockX": 49,
+      "goat": 26,
       "perSize": null,
       "size": null,
-      "lastSale": 55,
-      "lowestAsk": 50,
+      "lastSale": 78,
+      "lowestAsk": 49,
       "retailPrice": 120,
       "shoeName": "New Balance 550 White Green",
       "colorway": "White/Green",
@@ -219,18 +219,18 @@
         "flightClub": "https://www.flightclub.com/550-white-green-bb550wt1"
       }
     },
-    "ts": 1785013791931
+    "ts": 1785989086174
   },
   "sneaker|DD1391-100|any": {
     "data": {
       "source": "StockX (lowest ask)",
-      "sellPrice": 55,
-      "stockX": 55,
-      "goat": 44,
+      "sellPrice": 58,
+      "stockX": 58,
+      "goat": 41,
       "perSize": null,
       "size": null,
-      "lastSale": 71,
-      "lowestAsk": 55,
+      "lastSale": 61,
+      "lowestAsk": 58,
       "retailPrice": 115,
       "shoeName": "Nike Dunk Low Retro White Black Panda",
       "colorway": "White/Black",
@@ -241,7 +241,7 @@
         "flightClub": "https://www.flightclub.com/dunk-low-black-white-dd1391-100"
       }
     },
-    "ts": 1785013786351
+    "ts": 1785989081918
   },
   "sneaker|CT1685-100|any": {
     "data": {
@@ -443,13 +443,13 @@
   "sneaker|555088-610|any": {
     "data": {
       "source": "StockX (lowest ask)",
-      "sellPrice": 195,
-      "stockX": 195,
-      "goat": 236,
+      "sellPrice": 194,
+      "stockX": 194,
+      "goat": 235,
       "perSize": null,
       "size": null,
-      "lastSale": 229,
-      "lowestAsk": 195,
+      "lastSale": 189,
+      "lowestAsk": 194,
       "retailPrice": 160,
       "shoeName": "Jordan 1 Retro High Bred Toe",
       "colorway": "Gym Red/Black-Summit White",
@@ -460,7 +460,7 @@
         "goat": "http://www.goat.com/sneakers/air-jordan-1-retro-high-og-555088-610"
       }
     },
-    "ts": 1785013807446
+    "ts": 1785989104825
   },
   "sneaker|M2002RDJ|any": {
     "data": {
@@ -505,5 +505,193 @@
       }
     },
     "ts": 1785013845407
+  },
+  "sneaker|CP9654|any": {
+    "data": {
+      "source": "StockX (lowest ask)",
+      "sellPrice": 180,
+      "stockX": 180,
+      "goat": 190,
+      "perSize": null,
+      "size": null,
+      "lastSale": 296,
+      "lowestAsk": 180,
+      "retailPrice": 220,
+      "shoeName": "adidas Yeezy Boost 350 V2 Zebra",
+      "colorway": "White/Core Black/Red",
+      "styleId": "CP9654",
+      "links": {
+        "stockX": "https://stockx.com/adidas-yeezy-boost-350-v2-white-core-black-red",
+        "flightClub": "https://www.flightclub.com/yeezy-boost-350-v2-white-cblack-red-800502",
+        "goat": "http://www.goat.com/sneakers/yeezy-boost-350-v2-zebra-cp9654"
+      }
+    },
+    "ts": 1785989109399
+  },
+  "sneaker|AO4297-100|any": {
+    "data": {
+      "source": "StockX (lowest ask)",
+      "sellPrice": 5000,
+      "stockX": 5000,
+      "goat": 1949,
+      "perSize": null,
+      "size": null,
+      "lastSale": 1900,
+      "lowestAsk": 5000,
+      "retailPrice": 150,
+      "shoeName": "Nike Air Force 1 Low Off-White ComplexCon (AF100)",
+      "colorway": "White/Metallic Silver-Sail",
+      "styleId": "AO4297-100",
+      "links": {
+        "stockX": "https://stockx.com/nike-air-force-1-low-virgil-abloh-off-white-af100",
+        "flightClub": "https://www.flightclub.com/air-force-1-07-off-white-white-metallic-silver-sail-802566",
+        "goat": "http://www.goat.com/sneakers/off-white-x-air-force-1-complexcon-exclusive"
+      }
+    },
+    "ts": 1785989112948
+  },
+  "tcg|charizard|base set": {
+    "data": {
+      "source": "TCGplayer market",
+      "sellPrice": 467,
+      "sellVenue": "TCGplayer",
+      "evidence": "TCGplayer market $466.74 · low $134.98 · Base Set 2 004/130",
+      "marketData": {
+        "type": "card",
+        "name": "Charizard",
+        "set": "Base Set 2",
+        "number": "004/130",
+        "rarity": "Holo Rare",
+        "market": 466.74,
+        "low": 134.98,
+        "median": null,
+        "listings": 54,
+        "image": "https://product-images.tcgplayer.com/fit-in/400x400/42479.jpg"
+      },
+      "links": {
+        "sell": "https://www.tcgplayer.com/search/all/product?q=Charizard%20Base%20Set"
+      }
+    },
+    "ts": 1786026320882
+  },
+  "tcg|blastoise|base set": {
+    "data": {
+      "source": "TCGplayer market",
+      "sellPrice": 151,
+      "sellVenue": "TCGplayer",
+      "evidence": "TCGplayer market $150.8 · low $30 · Base Set 2 002/130",
+      "marketData": {
+        "type": "card",
+        "name": "Blastoise",
+        "set": "Base Set 2",
+        "number": "002/130",
+        "rarity": "Holo Rare",
+        "market": 150.8,
+        "low": 30,
+        "median": null,
+        "listings": 77,
+        "image": "https://product-images.tcgplayer.com/fit-in/400x400/42464.jpg"
+      },
+      "links": {
+        "sell": "https://www.tcgplayer.com/search/all/product?q=Blastoise%20Base%20Set"
+      }
+    },
+    "ts": 1786026321958
+  },
+  "tcg|umbreon vmax|evolving skies": {
+    "data": {
+      "source": "TCGplayer market",
+      "sellPrice": 29,
+      "sellVenue": "TCGplayer",
+      "evidence": "TCGplayer market $28.54 · low $9.88 · SWSH07: Evolving Skies 095/203",
+      "marketData": {
+        "type": "card",
+        "name": "Umbreon VMAX",
+        "set": "SWSH07: Evolving Skies",
+        "number": "095/203",
+        "rarity": "Ultra Rare",
+        "market": 28.54,
+        "low": 9.88,
+        "median": null,
+        "listings": 143,
+        "image": "https://product-images.tcgplayer.com/fit-in/400x400/246720.jpg"
+      },
+      "links": {
+        "sell": "https://www.tcgplayer.com/search/all/product?q=Umbreon%20VMAX%20Evolving%20Skies"
+      }
+    },
+    "ts": 1786026324985
+  },
+  "tcg|black lotus|beta": {
+    "data": {
+      "source": "TCGplayer market",
+      "sellPrice": 26950,
+      "sellVenue": "TCGplayer",
+      "evidence": "TCGplayer market $26950 · low $26950 · Beta Edition",
+      "marketData": {
+        "type": "card",
+        "name": "Black Lotus",
+        "set": "Beta Edition",
+        "number": null,
+        "rarity": "R",
+        "market": null,
+        "low": 26950,
+        "median": null,
+        "listings": 8,
+        "image": "https://product-images.tcgplayer.com/fit-in/400x400/8687.jpg"
+      },
+      "links": {
+        "sell": "https://www.tcgplayer.com/search/all/product?q=Black%20Lotus%20Beta"
+      }
+    },
+    "ts": 1786026342692
+  },
+  "tcg|charizard vstar|brilliant stars": {
+    "data": {
+      "source": "TCGplayer market",
+      "sellPrice": 12,
+      "sellVenue": "TCGplayer",
+      "evidence": "TCGplayer market $11.89 · low $5.75 · SWSH09: Brilliant Stars 018/172",
+      "marketData": {
+        "type": "card",
+        "name": "Charizard VSTAR",
+        "set": "SWSH09: Brilliant Stars",
+        "number": "018/172",
+        "rarity": "Ultra Rare",
+        "market": 11.89,
+        "low": 5.75,
+        "median": null,
+        "listings": 170,
+        "image": "https://product-images.tcgplayer.com/fit-in/400x400/257293.jpg"
+      },
+      "links": {
+        "sell": "https://www.tcgplayer.com/search/all/product?q=Charizard%20VSTAR%20Brilliant%20Stars"
+      }
+    },
+    "ts": 1786026347051
+  },
+  "tcg|lugia|neo genesis": {
+    "data": {
+      "source": "TCGplayer market",
+      "sellPrice": 1300,
+      "sellVenue": "TCGplayer",
+      "evidence": "TCGplayer market $1299.96 · low $145 · Neo Genesis 009/111",
+      "marketData": {
+        "type": "card",
+        "name": "Lugia",
+        "set": "Neo Genesis",
+        "number": "009/111",
+        "rarity": "Holo Rare",
+        "market": 1299.96,
+        "low": 145,
+        "median": null,
+        "listings": 38,
+        "image": "https://product-images.tcgplayer.com/fit-in/400x400/86903.jpg"
+      },
+      "links": {
+        "sell": "https://www.tcgplayer.com/search/all/product?q=Lugia%20Neo%20Genesis"
+      }
+    },
+    "ts": 1786026366141
   }
 }

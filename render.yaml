@@ -33,3 +33,17 @@ services:
         sync: false
       - key: STRIPE_PUBLISHABLE_KEY
         sync: false
+      - key: STRIPE_PRICE_PRO
+        value: price_1TgYjtLZgXIFyRuY3Ix6ekgu
+      - key: STRIPE_PRICE_PREMIUM
+        value: price_1TgYlVLZgXIFyRuYxzoRZoGy
+      - key: STRIPE_WEBHOOK_SECRET     # from the PRODUCTION webhook (dashboard), not the CLI
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: TCG_API_KEY
+        sync: false
+      - key: APP_URL
+        value: https://app.stackxd.com

@@ -2,20 +2,28 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Cpu, TrendingUp, Check } from 'lucide-react'
 import { addCredits, useCredit, getCredits } from '../credits'
-import HeroCarousel from '../components/HeroCarousel'
+import Hero from '../components/Hero'
 import ProfitTicker from '../components/ProfitTicker'
 import { Reveal, CountUp } from '../components/Reveal'
 import { C, F } from '../theme'
+import { Capacitor } from '@capacitor/core'
+import { API_BASE, supabase } from '../lib/supabase'
+import { useAuth } from '../lib/useAuth'
+
+// Apple/Google forbid selling digital subscriptions inside the native app, so we
+// hide all in-app pricing/checkout there. Users subscribe on the website.
+const isNative = Capacitor.isNativePlatform()
+
+// Free tier: one scan, then subscribe. Pro is unlimited.
+const FREE_SCANS = 1
+const freeScansUsed = () => Number(localStorage.getItem('stackd_free_scans') || 0)
 
 const CATEGORIES = [
   { label: 'Sneakers', emoji: '👟' },
   { label: 'Streetwear', emoji: '🧥' },
-  { label: 'Electronics', emoji: '📱' },
-  { label: 'Sports Cards', emoji: '🃏' },
-  { label: 'Video Games', emoji: '🎮' },
   { label: 'Vintage', emoji: '👗' },
+  { label: 'Electronics', emoji: '📱' },
   { label: 'Watches', emoji: '⌚' },
-  { label: 'Trading Cards', emoji: '✨' },
 ]
 
 const PLATFORMS = ['eBay', 'Facebook Marketplace', 'StockX', 'Depop', 'Poshmark']
@@ -72,6 +80,7 @@ const configBox = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${C
 const configLabel = { fontFamily: F.display, fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', color: C.text3, marginBottom: 16, textTransform: 'uppercase' }
 
 export default function SearchScreen({ onResults, credits, onCreditsChange }) {
+  const { isPro } = useAuth()
   const [selectedCategories, setSelectedCategories] = useState(['Sneakers'])
   const [budget, setBudget] = useState(100)
   const [selectedPlatforms, setSelectedPlatforms] = useState(['eBay', 'StockX'])
@@ -98,9 +107,13 @@ export default function SearchScreen({ onResults, credits, onCreditsChange }) {
 
   const handlePurchase = async (plan) => {
     try {
-      const res = await fetch('/api/create-checkout-session', {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`${API_BASE}/api/create-checkout-session`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({ plan: plan.id }),
       })
       const data = await res.json()
@@ -117,18 +130,19 @@ export default function SearchScreen({ onResults, credits, onCreditsChange }) {
   const handleSearch = async () => {
     if (!selectedCategories.length) return setError('Pick at least one category.')
     if (!selectedPlatforms.length) return setError('Pick at least one platform.')
-    if (credits <= 0) {
-      setError('No searches left — grab a plan below.')
-      document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })
+    // Free users get FREE_SCANS scans; Pro is unlimited. After that → subscribe.
+    if (!isPro && freeScansUsed() >= FREE_SCANS) {
+      setError(isNative
+        ? 'Free scan used — subscribe at stackxd.com to unlock unlimited scans and full flip details.'
+        : 'You’ve used your free scan — go Pro below to keep scanning and unlock full flip details.')
+      if (!isNative) document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })
       return
     }
     setError(null)
     setLoading(true)
     setLoadingMsgIdx(0)
-    useCredit()
-    onCreditsChange(getCredits())
     try {
-      const res = await fetch('/api/flips', {
+      const res = await fetch(`${API_BASE}/api/flips`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -140,11 +154,10 @@ export default function SearchScreen({ onResults, credits, onCreditsChange }) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Server error')
+      if (!isPro) { localStorage.setItem('stackd_free_scans', String(freeScansUsed() + 1)); onCreditsChange(getCredits()) }
       onResults(data.flips)
     } catch (err) {
       setError(err.message)
-      addCredits(1)
-      onCreditsChange(getCredits())
     } finally {
       setLoading(false)
     }
@@ -153,7 +166,7 @@ export default function SearchScreen({ onResults, credits, onCreditsChange }) {
   return (
     <>
       {/* ══ HERO CAROUSEL ══ */}
-      <HeroCarousel onStartFlipping={() => document.getElementById('configure')?.scrollIntoView({ behavior: 'smooth' })} />
+      <Hero onStartFlipping={() => document.getElementById('configure')?.scrollIntoView({ behavior: 'smooth' })} />
 
       {/* ══ PROFIT TICKER ══ */}
       <ProfitTicker />
@@ -202,7 +215,8 @@ export default function SearchScreen({ onResults, credits, onCreditsChange }) {
         </div>
       </section>
 
-      {/* ══ PRICING ══ */}
+      {/* ══ PRICING ══ (hidden in the native app — Apple/Google compliance) */}
+      {!isNative && (
       <section id="pricing" style={{ background: C.bg, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', padding: '80px 24px' }}>
           <Reveal style={{ textAlign: 'center', marginBottom: 48 }}>
@@ -292,6 +306,7 @@ export default function SearchScreen({ onResults, credits, onCreditsChange }) {
           </p>
         </div>
       </section>
+      )}
 
       {/* ══ CONFIGURE ══ */}
       <section id="configure" style={{ background: C.bg, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
@@ -378,21 +393,30 @@ export default function SearchScreen({ onResults, credits, onCreditsChange }) {
                 </p>
               </div>
 
+              {(() => {
+                const freeLeft = Math.max(0, FREE_SCANS - freeScansUsed())
+                const ok = isPro || freeLeft > 0
+                return (
               <div style={{
                 background: 'rgba(255,255,255,0.03)',
-                border: `1px solid ${credits > 0 ? 'rgba(240,180,41,0.2)' : 'rgba(255,107,107,0.25)'}`,
+                border: `1px solid ${ok ? 'rgba(240,180,41,0.2)' : 'rgba(255,107,107,0.25)'}`,
                 borderRadius: 12, padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}>
                 <span style={{ fontFamily: F.display, fontSize: 13, fontWeight: 500, color: C.text2 }}>
-                  {credits > 0 ? <><span style={{ color: C.accent, fontFamily: F.mono, fontWeight: 700 }}>{credits}</span> searches remaining</> : 'No searches — grab a plan below'}
+                  {isPro
+                    ? <><span style={{ color: C.accent, fontFamily: F.mono, fontWeight: 700 }}>PRO</span> · unlimited scans</>
+                    : freeLeft > 0
+                      ? <><span style={{ color: C.accent, fontFamily: F.mono, fontWeight: 700 }}>{freeLeft}</span> free scan{freeLeft !== 1 ? 's' : ''} left</>
+                      : 'Free scan used — go Pro to keep scanning'}
                 </span>
-                {credits <= 0 && (
+                {!isPro && freeLeft <= 0 && (
                   <button onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
                     style={{ fontFamily: F.display, fontSize: 12, fontWeight: 600, color: C.accent, background: 'none', border: 'none', cursor: 'pointer' }}>
-                    Get credits →
+                    Go Pro →
                   </button>
                 )}
               </div>
+              ) })()}
 
               {error && (
                 <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(255,107,107,0.05)', border: '1px solid rgba(255,107,107,0.25)' }}>
@@ -400,16 +424,16 @@ export default function SearchScreen({ onResults, credits, onCreditsChange }) {
                 </div>
               )}
 
-              <button onClick={handleSearch} disabled={loading || credits <= 0}
+              <button onClick={handleSearch} disabled={loading}
                 style={{
                   position: 'relative', overflow: 'hidden', width: '100%', height: 58, borderRadius: 12, border: 'none',
-                  cursor: loading || credits <= 0 ? 'not-allowed' : 'pointer',
+                  cursor: loading ? 'not-allowed' : 'pointer',
                   fontFamily: F.display, fontSize: 16, fontWeight: 700, letterSpacing: '0.02em',
                   background: C.accent, color: C.bg,
-                  opacity: credits <= 0 && !loading ? 0.4 : 1,
+                  opacity: 1,
                   transition: 'filter 0.25s, box-shadow 0.25s',
                 }}
-                onMouseEnter={e => { if (!loading && credits > 0) { e.currentTarget.style.filter = 'brightness(1.05)'; e.currentTarget.style.boxShadow = '0 0 50px rgba(240,180,41,0.35)' } }}
+                onMouseEnter={e => { if (!loading) { e.currentTarget.style.filter = 'brightness(1.05)'; e.currentTarget.style.boxShadow = '0 0 50px rgba(240,180,41,0.35)' } }}
                 onMouseLeave={e => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.boxShadow = 'none' }}>
                 {loading && (
                   <span style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)', animation: 'shimmer 1.4s linear infinite' }} />

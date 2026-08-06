@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import StackdLogo from './components/StackdLogo'
 import SearchScreen from './screens/SearchScreen'
 import ResultsScreen from './screens/ResultsScreen'
 import SavedScreen from './screens/SavedScreen'
@@ -67,8 +68,8 @@ export default function App() {
         <div style={{ height: '100%', maxWidth: 1400, margin: '0 auto', padding: '0 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 
           {/* Logo */}
-          <button onClick={() => setScreen('search')} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.accent, boxShadow: '0 0 10px rgba(240,180,41,0.6)' }} />
+          <button onClick={() => setScreen('search')} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 11 }}>
+            <StackdLogo size={24} />
             <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 16, color: C.text, letterSpacing: '0.2em' }}>STACKD</span>
           </button>
 

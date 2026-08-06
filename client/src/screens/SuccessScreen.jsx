@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { addCredits } from '../credits'
 import { C, F } from '../theme'
+import { API_BASE } from '../lib/supabase'
 
 const PLAN_NAMES = { pro: 'Starter', premium: 'Pro' }
 const PLAN_CREDITS = { pro: 4, premium: 12 }
@@ -18,12 +19,18 @@ export default function SuccessScreen({ onGoHome }) {
 
     if (!sessionId) { setStatus('error'); return }
 
-    fetch(`/api/verify-session?session_id=${sessionId}`)
+    fetch(`${API_BASE}/api/verify-session?session_id=${sessionId}`)
       .then(r => r.json())
       .then(data => {
         if (data.paid) {
           const granted = data.credits || PLAN_CREDITS[planParam] || 5
-          addCredits(granted)
+          // Grant only ONCE per checkout — guards against React's dev double-run
+          // and page refreshes (which was turning 12 into 24).
+          const key = `stackd_granted_${sessionId}`
+          if (!localStorage.getItem(key)) {
+            addCredits(granted)
+            localStorage.setItem(key, '1')
+          }
           setCredits(granted)
           setPlan(data.plan || planParam)
           setStatus('done')

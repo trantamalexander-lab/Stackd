@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Lock } from 'lucide-react'
 import { C, F } from '../theme'
+import { useAuth } from '../lib/useAuth'
 
 function CountUp({ to, duration = 1200 }) {
   const [val, setVal] = useState(0)
@@ -47,7 +48,8 @@ function LinkPill({ link }) {
   )
 }
 
-function FlipCard({ flip, onSave, saved, index }) {
+function FlipCard({ flip, onSave, saved, index, onUpgrade }) {
+  const { isPro } = useAuth()
   const [showGuide, setShowGuide] = useState(false)
   const [hovered, setHovered] = useState(false)
   const pct = flip.buyPrice ? Math.round((flip.profit / flip.buyPrice) * 100) : flip.margin
@@ -71,8 +73,10 @@ function FlipCard({ flip, onSave, saved, index }) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 20 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ fontFamily: F.display, fontWeight: 700, fontSize: 17, color: C.text, margin: '0 0 5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{flip.name}</h3>
-            <p style={{ fontFamily: F.display, fontWeight: 500, fontSize: 11, color: C.text3, margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{flip.category || flip.description || 'Resale'}</p>
+            <h3 style={{ fontFamily: F.display, fontWeight: 700, fontSize: 17, color: C.text, margin: '0 0 5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', filter: isPro ? 'none' : 'blur(6px)', userSelect: isPro ? 'auto' : 'none' }}>{flip.name}</h3>
+            <p style={{ fontFamily: F.display, fontWeight: 500, fontSize: 11, color: C.text3, margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              {isPro ? (flip.category || flip.description || 'Resale') : <span style={{ color: C.accent }}>🔒 Unlock item with Pro</span>}
+            </p>
           </div>
           <div style={{ background: 'rgba(240,180,41,0.1)', border: `1px solid ${C.accentBorder}`, color: C.accent, fontFamily: F.mono, fontWeight: 700, fontSize: 13, padding: '4px 12px', borderRadius: 999, flexShrink: 0, whiteSpace: 'nowrap' }}>
             +${flip.profit} ({pct}%)
@@ -110,21 +114,37 @@ function FlipCard({ flip, onSave, saved, index }) {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => setShowGuide(!showGuide)}
-            style={{
-              flex: 1, padding: 10, cursor: 'pointer', borderRadius: 8,
-              fontFamily: F.display, fontSize: 13, fontWeight: 600,
-              background: showGuide ? 'rgba(255,255,255,0.06)' : 'transparent',
-              border: `1px solid ${C.panelBorder}`,
-              color: showGuide ? C.text : C.text2,
-              transition: 'background 0.2s, color 0.2s, border-color 0.2s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = C.text }}
-            onMouseLeave={e => { if (!showGuide) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.text2 } e.currentTarget.style.borderColor = C.panelBorder }}
-          >
-            {showGuide ? 'Hide guide' : 'Show guide'}
-          </button>
+          {isPro ? (
+            <button
+              onClick={() => setShowGuide(!showGuide)}
+              style={{
+                flex: 1, padding: 10, cursor: 'pointer', borderRadius: 8,
+                fontFamily: F.display, fontSize: 13, fontWeight: 600,
+                background: showGuide ? 'rgba(255,255,255,0.06)' : 'transparent',
+                border: `1px solid ${C.panelBorder}`,
+                color: showGuide ? C.text : C.text2,
+                transition: 'background 0.2s, color 0.2s, border-color 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = C.text }}
+              onMouseLeave={e => { if (!showGuide) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.text2 } e.currentTarget.style.borderColor = C.panelBorder }}
+            >
+              {showGuide ? 'Hide guide' : 'Show guide'}
+            </button>
+          ) : (
+            <button
+              onClick={() => onUpgrade?.()}
+              style={{
+                flex: 1, padding: 10, cursor: 'pointer', borderRadius: 8,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                fontFamily: F.display, fontSize: 13, fontWeight: 700,
+                background: C.accent, color: C.bg, border: 'none', transition: 'filter 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.06)' }}
+              onMouseLeave={e => { e.currentTarget.style.filter = 'none' }}
+            >
+              <Lock size={13} /> Unlock item + buy link
+            </button>
+          )}
           <button
             onClick={() => onSave(flip)}
             style={{
@@ -151,32 +171,30 @@ function FlipCard({ flip, onSave, saved, index }) {
           >
             <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
               {/* Card/game live market price (PriceCharting) */}
-              {flip.marketData?.type === 'card' && (
+              {flip.marketData?.type === 'card' && (() => {
+                const md = flip.marketData
+                const isTcg = md.market != null || md.low != null
+                const cells = isTcg
+                  ? [['Market', md.market], ['Low', md.low], ['Median', md.median]]
+                  : [['Ungraded', md.ungraded], ['Grade 9', md.grade9], ['PSA 10', md.psa10]]
+                return (
                 <div style={{ background: 'rgba(240,180,41,0.06)', border: `1px solid ${C.accentBorder}`, borderRadius: 10, padding: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                     <p style={{ ...sectionLabel, margin: 0 }}>Live market price</p>
-                    <span style={{ fontFamily: F.display, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.bg, background: C.accent, borderRadius: 4, padding: '2px 6px' }}>PriceCharting</span>
+                    <span style={{ fontFamily: F.display, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.bg, background: C.accent, borderRadius: 4, padding: '2px 6px' }}>{isTcg ? 'TCGplayer' : 'PriceCharting'}</span>
                   </div>
+                  {(md.set || md.rarity) && <p style={{ fontFamily: F.display, fontSize: 12, color: C.text3, margin: '0 0 10px' }}>{[md.set, md.number, md.rarity].filter(Boolean).join(' · ')}</p>}
                   <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-                    <div>
-                      <div style={{ fontFamily: F.mono, fontWeight: 700, fontSize: 22, color: C.accent, lineHeight: 1 }}>${flip.marketData.ungraded}</div>
-                      <div style={{ fontFamily: F.display, fontSize: 10, color: C.text3, marginTop: 3, textTransform: 'uppercase' }}>Ungraded</div>
-                    </div>
-                    {flip.marketData.grade9 != null && (
-                      <div>
-                        <div style={{ fontFamily: F.mono, fontWeight: 700, fontSize: 22, color: C.text, lineHeight: 1 }}>${flip.marketData.grade9}</div>
-                        <div style={{ fontFamily: F.display, fontSize: 10, color: C.text3, marginTop: 3, textTransform: 'uppercase' }}>Grade 9</div>
+                    {cells.filter(([, v]) => v != null).map(([label, v], i) => (
+                      <div key={i}>
+                        <div style={{ fontFamily: F.mono, fontWeight: 700, fontSize: 22, color: i === 0 ? C.accent : C.text, lineHeight: 1 }}>${v}</div>
+                        <div style={{ fontFamily: F.display, fontSize: 10, color: C.text3, marginTop: 3, textTransform: 'uppercase' }}>{label}</div>
                       </div>
-                    )}
-                    {flip.marketData.psa10 != null && (
-                      <div>
-                        <div style={{ fontFamily: F.mono, fontWeight: 700, fontSize: 22, color: C.text, lineHeight: 1 }}>${flip.marketData.psa10}</div>
-                        <div style={{ fontFamily: F.display, fontSize: 10, color: C.text3, marginTop: 3, textTransform: 'uppercase' }}>PSA 10</div>
-                      </div>
-                    )}
+                    ))}
                   </div>
                 </div>
-              )}
+                )
+              })()}
               {/* Live StockX/GOAT market price — verified sell price source */}
               {flip.marketData && flip.marketData.type !== 'card' && (
                 <div style={{ background: 'rgba(240,180,41,0.06)', border: `1px solid ${C.accentBorder}`, borderRadius: 10, padding: 16 }}>
@@ -383,7 +401,7 @@ export default function ResultsScreen({ flips, onBack }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
         {flips.map((flip, i) => (
-          <FlipCard key={flip.id} flip={flip} index={i} onSave={handleSave} saved={savedIds.has(flip.id)} />
+          <FlipCard key={flip.id} flip={flip} index={i} onSave={handleSave} saved={savedIds.has(flip.id)} onUpgrade={onBack} />
         ))}
       </div>
 

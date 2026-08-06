@@ -409,10 +409,21 @@ function sellVenueUrl(venue, query) {
     case 'stockx':               return `https://stockx.com/search?s=${q}`;
     case 'goat':                 return `https://www.goat.com/search?query=${q}`;
     case 'depop':                return `https://www.depop.com/search/?q=${q}`;
+    case 'grailed':              return `https://www.grailed.com/shop?query=${q}`;
     case 'poshmark':             return `https://poshmark.com/search?query=${q}`;
+    case 'mercari':              return `https://www.mercari.com/search/?keyword=${q}`;
     case 'facebook marketplace': return `https://www.facebook.com/marketplace/search/?query=${q}`;
     default:                     return `https://www.ebay.com/sch/i.html?_nkw=${q}`;   // eBay
   }
+}
+
+// We always BUY on eBay, so selling on eBay too reads like a mistake. When the
+// resolved sell venue is eBay, route to a sensible second-hand marketplace for
+// that category instead (prices are comparable to eBay sold data).
+function altSellVenue(category = '') {
+  if (/sneaker|shoe|boot|footwear/i.test(category)) return 'GOAT';
+  if (/streetwear|vintage|clothing|apparel/i.test(category)) return 'Depop';
+  return 'Mercari';
 }
 
 async function getSneakerPrice(styleId, sizes = [], expectedName = '') {
@@ -602,10 +613,65 @@ async function getMarketPrice(target, sizes = []) {
       links: { sell: s.links?.stockX || null },
     };
   }
+  // Trading cards (Pokémon/Magic/Yu-Gi-Oh) → tcgapi.dev market price.
+  if (/trading\s*card/i.test(target.category || '')) {
+    const t = await getTradingCardPrice(target.cardName, target.cardSet);
+    if (t) return t;
+  }
   if (/card|game/i.test(target.category || '')) {
     return await getCardGamePrice(target.searchQuery);
   }
   return null;
+}
+
+// ── RAPIDAPI-STYLE: TRADING CARD MARKET PRICE (tcgapi.dev) ────
+// Real TCGplayer market prices for Pokémon/Magic/Yu-Gi-Oh. Free tier is only
+// ~100 req/day, so we cache hard and self-gate on the Trading Cards category.
+async function getTradingCardPrice(cardName, cardSet = '') {
+  if (!process.env.TCG_API_KEY || !cardName) return null;   // search matches card NAME only
+  const cacheK = `tcg|${cardName.toLowerCase()}|${cardSet.toLowerCase()}`;
+  const cached = getPriceCached(cacheK);
+  if (cached) { log(`   💾 TCG price cache hit (${cardName})`); return cached; }
+  try {
+    const res = await fetch(`https://api.tcgapi.dev/v1/search?q=${encodeURIComponent(cardName)}`,
+      { headers: { 'X-API-Key': process.env.TCG_API_KEY } });
+    if (!res.ok) { log(`   ⚠️ TCG API ${res.status} for "${cardName}" — falling back to eBay comps`); return null; }
+    const d = await res.json();
+    let priced = (d.data || []).filter(c => c.market_price || c.median_price || c.low_price);
+    // Narrow to the right printing by set name (a name search returns many sets).
+    if (cardSet) {
+      const s = cardSet.toLowerCase();
+      const setMatch = priced.filter(c => {
+        const cs = (c.set_name || '').toLowerCase();
+        return cs.includes(s) || s.includes(cs);
+      });
+      if (setMatch.length) priced = setMatch;
+    }
+    const card = priced.find(c => (c.total_listings ?? 1) > 0) || priced[0];
+    const price = card && (card.market_price || card.median_price || card.low_price);
+    if (!price) { log(`   ⚠️ TCG: no priced match for "${cardName}${cardSet ? ' / ' + cardSet : ''}" — falling back`); return null; }
+
+    const data = {
+      source:    'TCGplayer market',
+      sellPrice: Math.round(price),
+      sellVenue: 'TCGplayer',
+      evidence:  `TCGplayer market $${card.market_price ?? Math.round(price)}`
+        + (card.low_price ? ` · low $${card.low_price}` : '')
+        + (card.set_name ? ` · ${card.set_name}${card.number ? ' ' + card.number : ''}` : ''),
+      marketData: {
+        type: 'card', name: card.name, set: card.set_name, number: card.number, rarity: card.rarity,
+        market: card.market_price, low: card.low_price, median: card.median_price,
+        listings: card.total_listings, image: card.image_url,
+      },
+      links: { sell: `https://www.tcgplayer.com/search/all/product?q=${encodeURIComponent(`${cardName} ${cardSet}`.trim())}` },
+    };
+    writePriceCache(cacheK, data);
+    log(`   🃏 TCGplayer $${data.sellPrice} (${card.set_name || '?'} · ${card.name})`);
+    return data;
+  } catch (err) {
+    log(`   ⚠️ TCG API: ${err.message} — falling back to eBay comps`);
+    return null;
+  }
 }
 
 // ── STEP 1: Claude picks search targets ───────────────────────
@@ -629,7 +695,7 @@ Categories: ${categories.join(', ')}
 Max buy budget: $${maxBudget}${sizeNote}
 
 STRICT RULES:
-- Items must be WEARABLE clothing or footwear only — no keychains, posters, novelty items, accessories, or collectibles
+- Items must match the SELECTED CATEGORIES above and be specific, real, resellable products (no random novelty junk)
 - searchQuery MUST name a SPECIFIC model + defining detail (brand + model + colorway/version), NEVER a generic category. This is critical: a vague query returns junk listings. BAD: "Supreme hoodie", "Carhartt jacket", "Nike shoes", "vintage tee". GOOD: "Supreme Box Logo Hoodie", "Carhartt Detroit Blanket Lined Jacket", "Nike Dunk Low Panda", "Nike Air Max 90 Infrared"
 - expectedSellMin must be CONSERVATIVE — the price a normal used/common example actually sells for on the platform, NOT a rare/mint/grail example. Better to understate than overstate.
 - searchQuery must only match adult-sized wearable items (2-5 words, no size info)
@@ -639,6 +705,7 @@ STRICT RULES:
 - whyUnderpriced: 1 sentence, specific reason sellers misprice this
 - authChecks: 1 sentence, key authentication point for this exact item
 - styleId: for SNEAKERS ONLY, the official manufacturer style code / SKU (e.g. "DD1391-100" for Nike Dunk Low Panda, "555088-101" for Jordan 1 Chicago). This must be the real, exact SKU — it is used to look up the live StockX price. Use null for non-sneakers OR if you are not certain of the exact SKU. NEVER guess a SKU.
+- cardName / cardSet: for TRADING CARDS ONLY (Pokemon/Magic/Yu-Gi-Oh), cardName is the EXACT card name ONLY (e.g. "Charizard", "Blastoise", "Black Lotus") and cardSet is the set name (e.g. "Base Set", "Vivid Voltage", "Alpha"). These look up the live TCGplayer price. Use null for non-cards.
 
 Return ONLY this JSON array (8 objects):
 [
@@ -647,6 +714,8 @@ Return ONLY this JSON array (8 objects):
     "stockxQuery": "Nike Dunk Low White Black",
     "category": "Sneakers",
     "styleId": "DD1391-100",
+    "cardName": null,
+    "cardSet": null,
     "expectedBuyMax": ${Math.min(maxBudget, 90)},
     "expectedSellMin": ${Math.min(safeSell, 140)},
     "sellPlatform": "StockX",
@@ -902,6 +971,13 @@ Return ONLY this JSON object:
       + (bucketsIncoherent ? ' (comp set is mixed — treat as a rough guide)' : '');
     fees = sellVenue === 'StockX' ? Math.round(sellPrice * 0.095 + 5) : Math.round(sellPrice * 0.13);
     log(`   ⚖️ Condition-matched (${condLabel}): $${wasPrice} blended → $${sellPrice}`);
+  }
+
+  // Never buy AND sell on eBay — route the resale to a category marketplace so
+  // the flip reads as a real cross-platform arbitrage.
+  if (sellVenue === 'eBay') {
+    sellVenue = altSellVenue(target.category);
+    log(`   ↪ Sell venue remapped eBay → ${sellVenue} (buy is on eBay)`);
   }
 
   // Incoherent comps mean the price is a rough guide at best.
