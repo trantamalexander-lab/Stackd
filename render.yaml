@@ -43,7 +43,5 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      - key: TCG_API_KEY
-        sync: false
       - key: APP_URL
         value: https://app.stackxd.com
