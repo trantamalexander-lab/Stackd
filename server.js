@@ -5,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findFlips, lastQuota } from './flipFinder.js';
-import { stripe, getUserFromToken, getOrCreateCustomer, syncSubscriptionToProfile, priceForPlan } from './subscriptions.js';
+import { stripe, getUserFromToken, getOrCreateCustomer, syncSubscriptionToProfile, priceForPlan, billingConfig } from './subscriptions.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -231,7 +231,7 @@ app.get('/api/product-image/:item', async (req, res) => {
   res.status(502).send('Image unavailable');
 });
 
-app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+app.get('/api/health', (_req, res) => res.json({ status: 'ok', billing: billingConfig, supabase: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY), webhook: Boolean(process.env.STRIPE_WEBHOOK_SECRET) }));
 
 // ── Serve the built React frontend (production) ────────────────
 // Everything that isn't an /api route falls through to the SPA so the domain

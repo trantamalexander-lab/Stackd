@@ -16,17 +16,25 @@ export const supabaseAdmin = supabaseConfigured
   ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
   : null;
 
+// Env values pasted into hosting dashboards often carry stray whitespace/quotes,
+// which silently breaks exact comparisons — normalise before use.
+const envId = (v) => (v || '').trim().replace(/^["']|["']$/g, '');
+const PRICE_PRO     = envId(process.env.STRIPE_PRICE_PRO);
+const PRICE_PREMIUM = envId(process.env.STRIPE_PRICE_PREMIUM);
+
 // Map a Stripe price ID → our plan name.
 export function planForPrice(priceId) {
-  if (priceId === process.env.STRIPE_PRICE_PRO) return 'pro';
-  if (priceId === process.env.STRIPE_PRICE_PREMIUM) return 'premium';
+  if (priceId === PRICE_PRO) return 'pro';
+  if (priceId === PRICE_PREMIUM) return 'premium';
   return 'free';
 }
 export function priceForPlan(plan) {
-  if (plan === 'pro') return process.env.STRIPE_PRICE_PRO;
-  if (plan === 'premium') return process.env.STRIPE_PRICE_PREMIUM;
+  if (plan === 'pro') return PRICE_PRO || null;
+  if (plan === 'premium') return PRICE_PREMIUM || null;
   return null;
 }
+// Surfaced so /api/health can report whether billing is configured (no secrets).
+export const billingConfig = { pro: Boolean(PRICE_PRO), premium: Boolean(PRICE_PREMIUM) };
 
 // Verify a Supabase JWT (sent by the app) and return the logged-in user, or null.
 export async function getUserFromToken(authHeader) {
